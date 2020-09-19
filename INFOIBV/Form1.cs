@@ -204,6 +204,48 @@ namespace INFOIBV
 
             // TODO: add your functionality and checks, think about border handling and type conversion
 
+            // I assume that the size is always uneven
+            
+            // setup progress bar
+            progressBar.Visible = true;
+            progressBar.Minimum = 1;
+            progressBar.Maximum = InputImage.Size.Width * InputImage.Size.Height;
+            progressBar.Value = 1;
+            progressBar.Step = 1;
+
+            // process all the pixels in the image
+            for (int x = 0; x < InputImage.Size.Width; x++) // loop over columns
+                for (int y = 0; y < InputImage.Size.Height; y++) // loop over rows
+                {
+                    List<Byte> greyValues = new List<byte>();
+                    for (int i = (size - 1 / 2) - size; i <= ((size - 1) / 2); i++)
+                    {
+                        int Xindex = i + x;
+                        if (Xindex < 0)
+                            Xindex += InputImage.Size.Width;
+                        if (Xindex >= InputImage.Size.Width)
+                            Xindex -= InputImage.Size.Width;
+                        
+                        for (int j = (size - 1 / 2) - size; j <= ((size - 1) / 2); j++)
+                        {
+                            int Yindex = j + y;
+                            if (Yindex < 0)
+                                Yindex += InputImage.Size.Height;
+                            if (Yindex >= InputImage.Size.Height)
+                                Yindex -= InputImage.Size.Height;
+                            
+                            greyValues.Add(inputImage[Xindex, Yindex]);
+                        }
+                    }
+
+                    greyValues.Sort();
+                    tempImage[x, y] = greyValues[(size - 1) / 2];
+
+                    progressBar.PerformStep(); // increment progress bar
+                }
+            
+            progressBar.Visible = false;      
+
             return tempImage;
         }
 
@@ -238,6 +280,13 @@ namespace INFOIBV
 
             // TODO: add your functionality and checks, think about how to represent the binary values
 
+            // setup progress bar
+            progressBar.Visible = true;
+            progressBar.Minimum = 1;
+            progressBar.Maximum = InputImage.Size.Width * InputImage.Size.Height;
+            progressBar.Value = 1;
+            progressBar.Step = 1;
+            
             return tempImage;
         }
 
