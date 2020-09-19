@@ -25,7 +25,7 @@ namespace INFOIBV
          */
         private void loadImageButton_Click(object sender, EventArgs e)
         {
-           if (openImageDialog.ShowDialog() == DialogResult.OK)             // open file dialog
+            if (openImageDialog.ShowDialog() == DialogResult.OK)             // open file dialog
             {
                 string file = openImageDialog.FileName;                     // get the file name
                 imageFileName.Text = file;                                  // show file name
@@ -35,7 +35,7 @@ namespace INFOIBV
                     InputImage.Size.Height > 512 || InputImage.Size.Width > 512) // dimension check (may be removed or altered)
                     MessageBox.Show("Error in image dimensions (have to be > 0 and <= 512)");
                 else
-                    pictureBox1.Image = (Image) InputImage;                 // display input image
+                    pictureBox1.Image = (Image)InputImage;                 // display input image
             }
         }
 
@@ -61,6 +61,12 @@ namespace INFOIBV
             // ====================================================================
 
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
+            //workingImage = invertImage(workingImage);
+            //workingImage = adjustContrast(workingImage);
+            float[,] te = createGaussianFilter(5, 2f);
+            workingImage = convolveImage(workingImage, te);
+
+
 
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
@@ -72,7 +78,7 @@ namespace INFOIBV
                     Color newColor = Color.FromArgb(workingImage[x, y], workingImage[x, y], workingImage[x, y]);
                     OutputImage.SetPixel(x, y, newColor);                  // set the pixel color at coordinate (x,y)
                 }
-            
+
             pictureBox2.Image = (Image)OutputImage;                         // display output image
         }
 
@@ -135,8 +141,22 @@ namespace INFOIBV
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
 
-            // TODO: add your functionality and checks
+            byte aMax = 0;
+            for (int x = 0; x < inputImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    if (inputImage[x, y] > aMax) aMax = inputImage[x, y];
+                }
+            }
 
+            for (int x = 0; x < inputImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    tempImage[x, y] = (byte)(aMax - inputImage[x, y]);
+                }
+            }
             return tempImage;
         }
 
@@ -151,7 +171,24 @@ namespace INFOIBV
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
 
-            // TODO: add your functionality and checks
+            byte aHigh = 0;
+            byte aLow = 255;
+            for (int x = 0; x < inputImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    if (inputImage[x, y] > aHigh) aHigh = inputImage[x, y];
+                    if (inputImage[x, y] < aLow) aLow = inputImage[x, y];
+                }
+            }
+            if (aHigh == aLow) throw new DivideByZeroException("Highest and lowest values cannot be equal");
+            for (int x = 0; x < inputImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    tempImage[x, y] = (byte)((inputImage[x, y] - aLow) * (255 / (aHigh - aLow)));
+                }
+            }
 
             return tempImage;
         }
@@ -165,11 +202,30 @@ namespace INFOIBV
          */
         private float[,] createGaussianFilter(byte size, float sigma)
         {
+            if (size % 2 != 1) throw new Exception("size can't be even");
+
             // create temporary grayscale image
             float[,] filter = new float[size, size];
+            float sigmasq = sigma * sigma;
+            float sumtot = 0;           //Used for normalisation
 
-            // TODO: add your functionality and checks
+            for (int x = 0; x < size; x++)
+            {
+                for (int y = 0; y < size; y++)
+                {
+                    float tmp = (float)(Math.E / (2 * Math.PI * sigmasq)) - (x ^ 2 + y ^ 2) / (2 * sigmasq);
+                    sumtot += tmp;
+                    filter[x, y] = tmp;
+                }
+            }
 
+            for (int x = 0; x < size; x++)
+            {
+                for (int y = 0; y < size; y++)
+                {
+                    filter[x, y] *= (float)(1.0 / sumtot);
+                }
+            }
             return filter;
         }
 
@@ -182,12 +238,87 @@ namespace INFOIBV
          */
         private byte[,] convolveImage(byte[,] inputImage, float[,] filter)
         {
-            // create temporary grayscale image
-            byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
+            int[] offset = { filter.GetLength(0) / 2, filter.GetLength(1) / 2 };
+            byte[,] tempImage = new byte[inputImage.GetLength(0) + 2 * offset[0], inputImage.GetLength(1) + 2 * offset[1]];
+            byte[,] finalImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
 
-            // TODO: add your functionality and checks, think about border handling and type conversion
+            int avg = 0;
+            for (int x = 0; x < inputImage.GetLength(0); x++)       
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    avg += inputImage[x, y];
+                }
+            }
+            avg = avg / (inputImage.GetLength(0) * inputImage.GetLength(1));
 
-            return tempImage;
+            for (int x = 0; x < tempImage.GetLength(0); x++)       //fill temp image with average to fill corners.
+            {
+                for (int y = 0; y < tempImage.GetLength(1); y++)
+                {
+                    tempImage[x, y] = (byte) avg;
+                }
+            }
+            
+            for (int x = 0; x < inputImage.GetLength(0); x++)       //stretch top
+            {
+                for (int y = 0; y < offset[1]; y++)
+                {
+                    tempImage[x + offset[0], y] = inputImage[x, 0];
+                }
+            }
+
+            for (int x = 0; x < offset[0]; x++)                     //stretch left
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    tempImage[x, y] = inputImage[0, y];
+                }
+            }
+
+            for (int x = 0; x < inputImage.GetLength(0); x++)       //stretch bottom
+            {
+                for (int y = 0; y < offset[1]; y++)
+                {
+                    tempImage[x + offset[0], y + inputImage.GetLength(1) + offset[1]] = inputImage[x, inputImage.GetLength(1) - 1];
+                }
+            }
+
+            for (int x = 0; x < offset[0]; x++)
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)   //stretch right
+                {
+                    tempImage[x + inputImage.GetLength(0) + offset[1], y + offset[0]] = inputImage[inputImage.GetLength(1) - 1, y];
+                }
+            }
+            
+            for (int x = 0; x < inputImage.GetLength(0); x++) //insert image in middle
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    tempImage[x + offset[0], y + offset[1]] = inputImage[x, y];
+                }
+            }
+
+
+            for (int x = 0; x < finalImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < finalImage.GetLength(1); y++)
+                {
+                    float val = 0;
+                    for (int xf = 0; xf < filter.GetLength(0); xf++)
+                    {
+                        for (int yf = 0; yf < filter.GetLength(1); yf++)
+                        {
+                            val += filter[xf, yf] * tempImage[x  + xf, y + yf];
+                        }
+                    }
+
+                    finalImage[x, y] = (byte)val;
+                }
+            }
+
+            return finalImage;
         }
 
 
@@ -241,7 +372,7 @@ namespace INFOIBV
             return tempImage;
         }
 
-        
+
         // ====================================================================
         // ============= YOUR FUNCTIONS FOR ASSIGNMENT 2 GO HERE ==============
         // ====================================================================
