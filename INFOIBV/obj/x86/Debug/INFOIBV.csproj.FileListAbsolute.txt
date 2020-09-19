@@ -6,3 +6,12 @@ X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.Properties.Resources.
 X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.csproj.GenerateResource.cache
 X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.exe
 X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.pdb
+C:\Users\Berend\source\repos\isPRIEMa\INFOIBV\INFOIBV\bin\Debug\INFOIBV.exe
+C:\Users\Berend\source\repos\isPRIEMa\INFOIBV\INFOIBV\bin\Debug\INFOIBV.pdb
+C:\Users\Berend\source\repos\isPRIEMa\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.csprojAssemblyReference.cache
+C:\Users\Berend\source\repos\isPRIEMa\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.INFOIBV.resources
+C:\Users\Berend\source\repos\isPRIEMa\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.Properties.Resources.resources
+C:\Users\Berend\source\repos\isPRIEMa\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.csproj.GenerateResource.cache
+C:\Users\Berend\source\repos\isPRIEMa\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.csproj.CoreCompileInputs.cache
+C:\Users\Berend\source\repos\isPRIEMa\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.exe
+C:\Users\Berend\source\repos\isPRIEMa\INFOIBV\INFOIBV\obj\x86\Debug\INFOIBV.pdb
