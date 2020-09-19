@@ -126,6 +126,37 @@ namespace INFOIBV
 
             return tempImage;
         }
+        
+        private sbyte[,] HorizontalKernel()
+        {
+            // According to prewitt
+            sbyte[,] hKernel = new sbyte[3,3];
+            hKernel[0, 0] = -1;
+            hKernel[0, 1] = -1;
+            hKernel[0, 2] = -1;
+            hKernel[1, 0] = 0;
+            hKernel[1, 1] = 0;
+            hKernel[1, 2] = 0;
+            hKernel[2, 0] = 1;
+            hKernel[2, 1] = 1;
+            hKernel[2, 2] = 1;
+            return hKernel;
+        }
+
+        private sbyte[,] VerticalKernel()
+        {
+            sbyte[,] vKernel = new sbyte[3,3];
+            vKernel[0, 0] = -1;
+            vKernel[1, 0] = -1;
+            vKernel[2, 0] = -1;
+            vKernel[0, 1] = 0;
+            vKernel[1, 1] = 0;
+            vKernel[2, 1] = 0;
+            vKernel[0, 2] = 1;
+            vKernel[1, 2] = 1;
+            vKernel[2, 2] = 1;
+            return vKernel;
+        }
 
         /*
          * invertImage: invert a single channel (grayscale) image
@@ -381,15 +412,55 @@ namespace INFOIBV
          *          virticalKernel      vertical edge kernel
          * output:                      single-channel (byte) image
          */
-        private byte[,] edgeMagnitude(byte[,] inputImage, sbyte[,] horizontalKernel, sbyte[,] verticalKernel)
+                private byte[,] edgeMagnitude(byte[,] inputImage, sbyte[,] horizontalKernel, sbyte[,] verticalKernel)
         {
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
 
-            // TODO: add your functionality and checks, think about border handling and type conversion (negative values!)
+            // setup progress bar
+            progressBar.Visible = true;
+            progressBar.Minimum = 1;
+            progressBar.Maximum = InputImage.Size.Width * InputImage.Size.Height;
+            progressBar.Value = 1;
+            progressBar.Step = 1;
+
+            for (int x = 0; x < InputImage.Size.Width; x++) // loop over columns
+            {
+                for (int y = 0; y < InputImage.Size.Height; y++) // loop over rows
+                {
+                    int DX = 0;
+                    int DY = 0;
+                    for (int i = -1; i <= 1; i++)
+                    {
+                        // Extending the image in in case we encounter borders
+                        int xPixel = x + i;
+                        if (xPixel >= InputImage.Size.Width)
+                            xPixel = InputImage.Size.Width - 1;
+                        if (xPixel < 0)
+                            xPixel = 0;
+                        for (int j = -1; j <= 1; j++)
+                        {
+                            // Extending the image in case we encounter borders
+                            int yPixel = y + j;
+                            if (yPixel >= InputImage.Size.Height)
+                                yPixel = InputImage.Size.Height - 1;
+                            if (yPixel < 0)
+                                yPixel = 0;
+
+                            DX += horizontalKernel[i + 1, j + 1] * inputImage[xPixel, yPixel];
+                            DY += verticalKernel[i + 1, j + 1] * inputImage[xPixel, yPixel];
+                        }
+                    }
+
+                    tempImage[x, y] = (Byte) (Math.Sqrt(Math.Pow(DX, 2) + Math.Pow(DY, 2)) / 6);
+                    progressBar.PerformStep();
+
+                }
+            }
 
             return tempImage;
         }
+
 
 
         /*
@@ -401,8 +472,7 @@ namespace INFOIBV
         {
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
-
-            // TODO: add your functionality and checks, think about how to represent the binary values
+            
 
             // setup progress bar
             progressBar.Visible = true;
