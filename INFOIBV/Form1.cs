@@ -286,7 +286,19 @@ namespace INFOIBV
             progressBar.Maximum = InputImage.Size.Width * InputImage.Size.Height;
             progressBar.Value = 1;
             progressBar.Step = 1;
+
+            Byte threshhold = 128;
             
+            //Apply threshold
+            for (int x = 0; x < InputImage.Size.Width; x++) // loop over columns
+                for (int y = 0; y < InputImage.Size.Height; y++) // loop over rows
+                {
+                    if (inputImage[x, y] > threshhold)
+                        tempImage[x, y] = 255;
+                    else
+                        tempImage[x, y] = 0;
+                }
+
             return tempImage;
         }
 
