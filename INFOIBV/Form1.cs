@@ -60,11 +60,11 @@ namespace INFOIBV
             // Alternatively you can create buttons to invoke certain functionality
             // ====================================================================
 
+
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
             //workingImage = invertImage(workingImage);
             //workingImage = adjustContrast(workingImage);
-            float[,] te = createGaussianFilter(5, 2f);
-            workingImage = convolveImage(workingImage, te);
+            //workingImage = convolveImage(workingImage, createGaussianFilter(5, 2f));
 
 
 
@@ -99,6 +99,7 @@ namespace INFOIBV
          * input:   inputImage          three-channel (Color) image
          * output:                      single-channel (byte) image
          */
+
         private byte[,] convertToGrayscale(Color[,] inputImage)
         {
             // create temporary grayscale image of the same size as input, with a single channel
@@ -126,11 +127,6 @@ namespace INFOIBV
             return tempImage;
         }
 
-
-        // ====================================================================
-        // ============= YOUR FUNCTIONS FOR ASSIGNMENT 1 GO HERE ==============
-        // ====================================================================
-
         /*
          * invertImage: invert a single channel (grayscale) image
          * input:   inputImage          single-channel (byte) image
@@ -138,11 +134,10 @@ namespace INFOIBV
          */
         private byte[,] invertImage(byte[,] inputImage)
         {
-            // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
 
             byte aMax = 0;
-            for (int x = 0; x < inputImage.GetLength(0); x++)
+            for (int x = 0; x < inputImage.GetLength(0); x++)   //gets Highest value in image
             {
                 for (int y = 0; y < inputImage.GetLength(1); y++)
                 {
@@ -150,7 +145,7 @@ namespace INFOIBV
                 }
             }
 
-            for (int x = 0; x < inputImage.GetLength(0); x++)
+            for (int x = 0; x < inputImage.GetLength(0); x++)   //applies inversion to each pixel
             {
                 for (int y = 0; y < inputImage.GetLength(1); y++)
                 {
@@ -168,12 +163,11 @@ namespace INFOIBV
          */
         private byte[,] adjustContrast(byte[,] inputImage)
         {
-            // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
 
             byte aHigh = 0;
             byte aLow = 255;
-            for (int x = 0; x < inputImage.GetLength(0); x++)
+            for (int x = 0; x < inputImage.GetLength(0); x++)       //gets the Highest and lowest values from the image
             {
                 for (int y = 0; y < inputImage.GetLength(1); y++)
                 {
@@ -182,6 +176,7 @@ namespace INFOIBV
                 }
             }
             if (aHigh == aLow) throw new DivideByZeroException("Highest and lowest values cannot be equal");
+
             for (int x = 0; x < inputImage.GetLength(0); x++)
             {
                 for (int y = 0; y < inputImage.GetLength(1); y++)
@@ -204,7 +199,6 @@ namespace INFOIBV
         {
             if (size % 2 != 1) throw new Exception("size can't be even");
 
-            // create temporary grayscale image
             float[,] filter = new float[size, size];
             float sigmasq = sigma * sigma;
             float sumtot = 0;           //Used for normalisation
@@ -218,12 +212,13 @@ namespace INFOIBV
                     filter[x, y] = tmp;
                 }
             }
+            sumtot = 1.0f / sumtot; //inverse of total for normalisation
 
             for (int x = 0; x < size; x++)
             {
                 for (int y = 0; y < size; y++)
                 {
-                    filter[x, y] *= (float)(1.0 / sumtot);
+                    filter[x, y] *= sumtot;
                 }
             }
             return filter;
@@ -238,12 +233,12 @@ namespace INFOIBV
          */
         private byte[,] convolveImage(byte[,] inputImage, float[,] filter)
         {
-            int[] offset = { filter.GetLength(0) / 2, filter.GetLength(1) / 2 };
+            int[] offset = { filter.GetLength(0) / 2, filter.GetLength(1) / 2 };        //contains the offset used for the borders.
             byte[,] tempImage = new byte[inputImage.GetLength(0) + 2 * offset[0], inputImage.GetLength(1) + 2 * offset[1]];
             byte[,] finalImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
 
             int avg = 0;
-            for (int x = 0; x < inputImage.GetLength(0); x++)       
+            for (int x = 0; x < inputImage.GetLength(0); x++)       //gets the average pixel value 
             {
                 for (int y = 0; y < inputImage.GetLength(1); y++)
                 {
@@ -300,8 +295,8 @@ namespace INFOIBV
                 }
             }
 
-
-            for (int x = 0; x < finalImage.GetLength(0); x++)
+            //loops over every pixel, and for each pixel applies the filter with another loop. The value of each multiplication is summed and creates a final image.
+            for (int x = 0; x < finalImage.GetLength(0); x++)   
             {
                 for (int y = 0; y < finalImage.GetLength(1); y++)
                 {
@@ -332,8 +327,6 @@ namespace INFOIBV
         {
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
-
-            // TODO: add your functionality and checks, think about border handling and type conversion
 
             // I assume that the size is always uneven
             
@@ -432,16 +425,5 @@ namespace INFOIBV
 
             return tempImage;
         }
-
-
-        // ====================================================================
-        // ============= YOUR FUNCTIONS FOR ASSIGNMENT 2 GO HERE ==============
-        // ====================================================================
-
-
-        // ====================================================================
-        // ============= YOUR FUNCTIONS FOR ASSIGNMENT 3 GO HERE ==============
-        // ====================================================================
-
     }
 }
