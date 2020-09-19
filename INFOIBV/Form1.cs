@@ -62,6 +62,7 @@ namespace INFOIBV
 
 
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
+
             //workingImage = invertImage(workingImage);
             //workingImage = adjustContrast(workingImage);
             //workingImage = convolveImage(workingImage, createGaussianFilter(5, 2f));
@@ -276,8 +277,8 @@ namespace INFOIBV
                     avg += inputImage[x, y];
                 }
             }
-            avg = avg / (inputImage.GetLength(0) * inputImage.GetLength(1));
 
+            avg = avg / (inputImage.GetLength(0) * inputImage.GetLength(1));
             for (int x = 0; x < tempImage.GetLength(0); x++)       //fill temp image with average to fill corners.
             {
                 for (int y = 0; y < tempImage.GetLength(1); y++)
@@ -404,7 +405,6 @@ namespace INFOIBV
             return tempImage;
         }
 
-
         /*
          * edgeMagnitude: calculate the image derivative of an input image and a provided edge kernel
          * input:   inputImage          single-channel (byte) image
@@ -412,7 +412,7 @@ namespace INFOIBV
          *          virticalKernel      vertical edge kernel
          * output:                      single-channel (byte) image
          */
-                private byte[,] edgeMagnitude(byte[,] inputImage, sbyte[,] horizontalKernel, sbyte[,] verticalKernel)
+        private byte[,] edgeMagnitude(byte[,] inputImage, sbyte[,] horizontalKernel, sbyte[,] verticalKernel)
         {
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
@@ -460,8 +460,6 @@ namespace INFOIBV
 
             return tempImage;
         }
-
-
 
         /*
          * thresholdImage: threshold a grayscale image
