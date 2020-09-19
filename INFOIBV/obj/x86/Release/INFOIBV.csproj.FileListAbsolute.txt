@@ -1,0 +1,8 @@
+X:\Documenten\GitHub\INFOIBV\INFOIBV\bin\Release\INFOIBV.exe
+X:\Documenten\GitHub\INFOIBV\INFOIBV\bin\Release\INFOIBV.pdb
+X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.csprojAssemblyReference.cache
+X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.INFOIBV.resources
+X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.Properties.Resources.resources
+X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.csproj.GenerateResource.cache
+X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.exe
+X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.pdb
