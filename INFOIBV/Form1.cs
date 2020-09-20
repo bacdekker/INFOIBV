@@ -65,8 +65,8 @@ namespace INFOIBV
 
             //workingImage = invertImage(workingImage);
             //workingImage = adjustContrast(workingImage);
-            //workingImage = convolveImage(workingImage, createGaussianFilter(5, 2f));
-            //workingImage = medianFilter(workingImage, 3); // Size needs to be odd
+            //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
+            //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
             //workingImage = thresholdImage(workingImage);
             //workingImage = equalizeImage(workingImage);
@@ -404,7 +404,7 @@ namespace INFOIBV
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
 
-            if (size % 2 == 1)
+            if (size % 2 != 1)
                 throw new Exception("No definition for even size");
 
             // I assume that the size is always uneven
@@ -531,7 +531,7 @@ namespace INFOIBV
             progressBar.Value = 1;
             progressBar.Step = 1;
 
-            Byte threshhold = 128;
+            Byte threshhold = 10;
             
             //Apply threshold
             for (int x = 0; x < InputImage.Size.Width; x++) // loop over columns
