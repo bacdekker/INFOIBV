@@ -69,6 +69,7 @@ namespace INFOIBV
             //workingImage = medianFilter(workingImage, 3); // Size needs to be odd
             //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
             //workingImage = thresholdImage(workingImage);
+            //workingImage = equalizeImage(workingImage);
 
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
@@ -126,7 +127,7 @@ namespace INFOIBV
 
             progressBar.Visible = false;                                    // hide progress bar
 
-            return invertImage(tempImage);
+            return tempImage;
         }
         
         private sbyte[,] HorizontalKernel()
@@ -160,6 +161,48 @@ namespace INFOIBV
             return vKernel;
         }
 
+        private int[] makeHistogram(byte[,] inputImage)
+        {
+            int[] histogram = new int[256];
+            for (int x = 0; x < InputImage.Size.Width; x++) // loop over columns
+                for (int y = 0; y < InputImage.Size.Height; y++)
+                {
+                    histogram[inputImage[x, y]] += 1;
+                }
+
+            return histogram;
+        }
+
+        private int[] makeHistogramCumulative(int[] histogram)
+        {
+            int[] cumulativeHistogram = new int[256];
+            cumulativeHistogram[0] = histogram[0];
+            for (int i = 1; i < histogram.Length; i++)
+            {
+                cumulativeHistogram[i] = histogram[i] + cumulativeHistogram[i - 1];
+            }
+
+            return cumulativeHistogram;
+        }
+
+        private byte[,] equalizeImage(byte[,] inputImage)
+        {
+            int[] histogram = makeHistogram(inputImage);
+            int[] cumulativeHistogram = makeHistogramCumulative(histogram);
+
+            int size = InputImage.Size.Width * InputImage.Size.Height;
+            
+            for(int x = 0; x < InputImage.Size.Width; x++)
+                for (int y = 0; y < InputImage.Size.Height; y++)
+                {
+                    byte greyValue = inputImage[x, y];
+                    byte newValue = (byte)((cumulativeHistogram[greyValue] * 255) / size);
+                    inputImage[x, y] = newValue;
+                }
+
+            return inputImage;
+        }
+        
         /*
          * invertImage: invert a single channel (grayscale) image
          * input:   inputImage          single-channel (byte) image
