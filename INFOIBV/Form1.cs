@@ -67,7 +67,7 @@ namespace INFOIBV
             //workingImage = adjustContrast(workingImage);
             //workingImage = convolveImage(workingImage, createGaussianFilter(5, 2f));
             //workingImage = medianFilter(workingImage, 3); // Size needs to be odd
-            //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
+            workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
             //workingImage = thresholdImage(workingImage);
             //workingImage = equalizeImage(workingImage);
 
@@ -404,6 +404,9 @@ namespace INFOIBV
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
 
+            if (size % 2 == 1)
+                throw new Exception("No definition for even size");
+
             // I assume that the size is always uneven
             
             // setup progress bar
@@ -460,7 +463,12 @@ namespace INFOIBV
         {
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
-
+            
+            if(horizontalKernel.GetLength(0) != 3 || horizontalKernel.GetLength(1) != 3)
+                throw new Exception("Unexpected horizontal kernel size");
+            if(verticalKernel.GetLength(0) != 3 || verticalKernel.GetLength(1) != 3)
+                throw new Exception("Unexpected vertical kernel size");
+            
             // setup progress bar
             progressBar.Visible = true;
             progressBar.Minimum = 1;
