@@ -67,7 +67,7 @@ namespace INFOIBV
             //workingImage = adjustContrast(workingImage);
             //workingImage = convolveImage(workingImage, createGaussianFilter(5, 2f));
             //workingImage = medianFilter(workingImage, 3); // Size needs to be odd
-            workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
+            //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
             //workingImage = thresholdImage(workingImage);
             //workingImage = equalizeImage(workingImage);
 
