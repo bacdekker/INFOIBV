@@ -32,10 +32,10 @@ namespace INFOIBV
                 imageFileName.Text = file;                                  // show file name
                 if (InputImage != null) InputImage.Dispose();               // reset image
                 InputImage = new Bitmap(file);                              // create new Bitmap from file
-                if (InputImage.Size.Height <= 0 || InputImage.Size.Width <= 0 ||
-                    InputImage.Size.Height > 512 || InputImage.Size.Width > 512) // dimension check (may be removed or altered)
-                    MessageBox.Show("Error in image dimensions (have to be > 0 and <= 512)");
-                else
+                //if (InputImage.Size.Height <= 0 || InputImage.Size.Width <= 0 ||
+                //    InputImage.Size.Height > 512 || InputImage.Size.Width > 512) // dimension check (may be removed or altered)
+                //    MessageBox.Show("Error in image dimensions (have to be > 0 and <= 512)");
+                //else
                     pictureBox1.Image = (Image)InputImage;                 // display input image
             }
         }
@@ -72,7 +72,12 @@ namespace INFOIBV
             //workingImage = thresholdImage(workingImage);
             //workingImage = equalizeImage(workingImage);
             //List<Point> points = traceBoundary(workingImage); 
-            Histogram h = countValues(workingImage);
+            //workingImage = erodeImage(workingImage, createStructuringElement('c', 7));
+            //workingImage = dilateImage(workingImage, createStructuringElement('p', 3));
+            //workingImage = openImage(workingImage, createStructuringElement('s', 15));
+            //workingImage = openImage(workingImage, createStructuringElement('s', 9));
+            //workingImage = invertImage(workingImage);
+            //Histogram h = countValues(workingImage);
 
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
@@ -98,6 +103,8 @@ namespace INFOIBV
             if (saveImageDialog.ShowDialog() == DialogResult.OK)
                 OutputImage.Save(saveImageDialog.FileName);                 // save the output image
         }
+        
+        #region Assignment1
 
 
         /*
@@ -216,13 +223,14 @@ namespace INFOIBV
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
 
             byte aMax = 0;
-            for (int x = 0; x < inputImage.GetLength(0); x++)   //gets Highest value in image
-            {
-                for (int y = 0; y < inputImage.GetLength(1); y++)
-                {
-                    if (inputImage[x, y] > aMax) aMax = inputImage[x, y];
-                }
-            }
+            //for (int x = 0; x < inputImage.GetLength(0); x++)   //gets Highest value in image
+            //{
+            //    for (int y = 0; y < inputImage.GetLength(1); y++)
+            //    {
+            //        if (inputImage[x, y] > aMax) aMax = inputImage[x, y];
+            //    }
+            //}
+            aMax = 255;
 
             for (int x = 0; x < inputImage.GetLength(0); x++)   //applies inversion to each pixel
             {
@@ -548,9 +556,126 @@ namespace INFOIBV
 
             return tempImage;
         }
-        
+        #endregion
+
+        #region Assignment2
         //All functions for assignment 2 (This comment is added later)
 
+         private byte[,] erodeImage(byte[,] inputImage, List<ElementPoint> strElement)
+        {
+            byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
+            for (int x = 0; x < inputImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    int lowest = 255;
+                    foreach (ElementPoint i in strElement)
+                    {
+                        if(    x + i.x >= 0 && x + i.x < inputImage.GetLength(0) 
+                            && y + i.y >= 0 && y + i.y < inputImage.GetLength(1))
+                        {
+                            if (inputImage[x + i.x, y + i.y] - i.value < lowest)
+                            {
+                                lowest = inputImage[x + i.x, y + i.y] - i.value;
+                            }
+                        }
+                    }
+                    if (lowest <= 0) tempImage[x, y] = 0;
+                    else tempImage[x, y] = (byte) lowest;
+                }
+            }
+            return tempImage;
+        }
+
+        private byte[,] dilateImage(byte[,] inputImage, List<ElementPoint> strElement)
+        {
+            byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
+            for (int x = 0; x < inputImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    int highest = 0;
+                    foreach (ElementPoint i in strElement)
+                    {
+                        if (    x + i.x >= 0 && x + i.x < inputImage.GetLength(0)
+                             && y + i.y >= 0 && y + i.y < inputImage.GetLength(1))
+                        {
+                            if (inputImage[x + i.x, y + i.y] + i.value > highest)
+                            {
+                                highest = (inputImage[x + i.x, y + i.y] + i.value);
+                            }
+                        }
+                    }
+                    if (highest >= 255) tempImage[x, y] = 255;
+                    else tempImage[x, y] = (byte)highest;
+                }
+            }
+            return tempImage;
+        }
+        private byte[,] openImage(byte[,] inputImage, List<ElementPoint> strElement)
+        {
+            byte[,] tempImage = erodeImage(inputImage, strElement);
+            tempImage = dilateImage(tempImage, strElement);
+            return tempImage;
+        }
+
+        private byte[,] closeImage(byte[,] inputImage, List<ElementPoint> strElement)
+        {
+            byte[,] tempImage = dilateImage(inputImage, strElement);
+            tempImage = erodeImage(tempImage, strElement);
+            return tempImage;
+        }
+        
+        struct ElementPoint
+        {
+            public int x, y;
+            public byte value;
+        }
+        
+        private List<ElementPoint> createStructuringElement(char shape, byte size) 
+        {
+            if (size % 2 != 1) throw new Exception("size can't be even");
+            if (size <= 2) throw new Exception("size needs to be at least 3");
+            List<ElementPoint> element = new List<ElementPoint>();
+            switch (shape)
+            {
+                case 'p':
+                    element.Add(new ElementPoint { x = 0, y = 0, value = 1 });
+                    for (int x = -(size / 2); x < size / 2 + 1; x++)
+                    {
+                        if (x != 0) element.Add(new ElementPoint { x = x, y = 0, value = 1 });
+                    }
+                    for (int y = -(size / 2); y < size / 2 + 1; y++)
+                    {
+                        if(y != 0) element.Add(new ElementPoint { x = 0, y = y, value = 1 });
+                    }
+                    break;
+                case 'c':  
+                    for (int x = -(size / 2); x < size / 2 + 1; x++)
+                    {
+                        for (int y = -(size / 2); y < size / 2 + 1; y++)
+                        {
+                            if (x * x + y + y <= (size / 2) * (size / 2))
+                            {
+                                element.Add(new ElementPoint { x = x, y = y, value = 1 });
+                            }
+                        }
+                    }
+                    break;
+                case 's':
+                    for (int x =  - (size / 2); x < size / 2 + 1; x++)
+                    {
+                        for (int y = - (size / 2); y < size / 2 + 1; y++)
+                        {
+                            element.Add(new ElementPoint { x = x, y = y, value = 1 });
+                        }
+                    }
+                    break;
+                default:
+                    throw new Exception("shape needs to be either p for plus, or s for square");
+            }
+            return element;
+        }
         private byte[,] andImages(byte[,] I1, byte[,] I2)
         {
             if(I1.GetLength(0) != I2.GetLength(0))
@@ -721,6 +846,7 @@ namespace INFOIBV
 
             return dir;
         }            
+        #endregion
     }
     
     struct Histogram
@@ -728,4 +854,5 @@ namespace INFOIBV
         public int[] intensityValues;
         public byte uniqueValues;
     }
+    
 }
