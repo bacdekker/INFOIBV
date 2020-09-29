@@ -545,5 +545,45 @@ namespace INFOIBV
 
             return tempImage;
         }
+        
+        //All functions for assignment 2 (This comment is added later)
+
+        private byte[,] AND(byte[,] I1, byte[,] I2)
+        {
+            if(I1.GetLength(0) != I2.GetLength(0))
+                throw new Exception("The size of the input images does not match in the AND operation");
+            if(I1.GetLength(1) != I2.GetLength(1))
+                throw new Exception("The size of the input images does not match in the AND operation");
+            
+            byte[,] result = new byte[I1.GetLength(0), I1.GetLength(1)];
+            
+            for(int x = 0; x < I1.GetLength(0); x++)
+                for (int y = 0; y < I1.GetLength(1); y++)
+                {
+                    if (I1[x, y] == 1 && I2[x, y] == 1)
+                        result[x, y] = 1;
+                }
+
+            return result;
+        }
+        
+        private byte[,] OR(byte[,] I1, byte[,] I2)
+        {
+            if(I1.GetLength(0) != I2.GetLength(0))
+                throw new Exception("The size of the input images does not match in the OR operation");
+            if(I1.GetLength(1) != I2.GetLength(1))
+                throw new Exception("The size of the input images does not match in the OR operation");
+            
+            byte[,] result = new byte[I1.GetLength(0), I1.GetLength(1)];
+            
+            for(int x = 0; x < I1.GetLength(0); x++)
+                for (int y = 0; y < I1.GetLength(1); y++)
+                {
+                    if (I1[x, y] == 1 || I2[x, y] == 1)
+                        result[x, y] = 1;
+                }
+
+            return result;
+        }
     }
 }
