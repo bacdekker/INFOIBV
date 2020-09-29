@@ -633,16 +633,19 @@ namespace INFOIBV
             xS = startingPoint.X; //Declare the starting point
             yS = startingPoint.Y; //Declare the starting point
             contour.Add(pt);
-            dir = findNextPoint(dir, pt, binaryImage); //Get the next point after the starting point
+
+            int[] p = new[] {pt.X, pt.Y};
+            
+            dir = findNextPoint(dir, p, binaryImage); //Get the next point after the starting point
 
             xP = xS; //Previous contour point is the starting point
             yP = yS; //Previous contour point is the starting point
 
-            xT = pt.X; //Declare the successor of the starting point
-            yT = pt.Y; 
+            xT = p[0]; //Declare the successor of the starting point
+            yT = p[1]; 
             
-            xC = pt.X; //Declare the current point
-            yC = pt.Y;
+            xC = p[0]; //Declare the current point
+            yC = p[1];
 
             bool done = xS == xT && yS == yT;
             
@@ -651,19 +654,19 @@ namespace INFOIBV
 
             while (!done)
             {
-                pt = new Point(xC, yC);
+                p = new int[]{xC, yC};
                 int nDir = (dir + 6) % 8;
-                dir = findNextPoint(nDir, pt, binaryImage);
+                dir = findNextPoint(nDir, p, binaryImage);
 
                 xP = xC; // Save the location of the precious point;
                 yP = yC;
 
-                xC = pt.X; // Update the current point
-                yC = pt.Y;
+                xC = p[0]; // Update the current point
+                yC = p[0];
 
                 done = xP == xS && yP == yS && xC == xT && yC == yT;
                 if (!done)
-                    contour.Add(pt);
+                    contour.Add(new Point(p[0], p[1]));
             }
 
 
@@ -681,13 +684,13 @@ namespace INFOIBV
             throw new Exception("No boundry");
         }
 
-        private int findNextPoint(int dir, Point pt, byte[,] inputImage)
+        private int findNextPoint(int dir, int[] pt, byte[,] inputImage)
         {
             int[,] dirs = {{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}};
             for (int i = 0; i < 7; i++)
             {
-                int x = pt.X + dirs[i,0];
-                int y = pt.Y + dirs[i,1];
+                int x = pt[0] + dirs[i,0];
+                int y = pt[1] + dirs[i,1];
                 
                 //Checking if we sampel out of bounds
                 if (x < 0 || x >= inputImage.GetLength(0))
@@ -701,8 +704,8 @@ namespace INFOIBV
                 }
                 else
                 {
-                    pt.X = x;
-                    pt.Y = y;
+                    pt[0] = x;
+                    pt[x] = y;
                     break;
                 }
             }
