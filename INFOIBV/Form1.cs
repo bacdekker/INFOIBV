@@ -548,7 +548,7 @@ namespace INFOIBV
         
         //All functions for assignment 2 (This comment is added later)
 
-        private byte[,] AND(byte[,] I1, byte[,] I2)
+        private byte[,] andImages(byte[,] I1, byte[,] I2)
         {
             if(I1.GetLength(0) != I2.GetLength(0))
                 throw new Exception("The size of the input images does not match in the AND operation");
@@ -567,7 +567,7 @@ namespace INFOIBV
             return result;
         }
         
-        private byte[,] OR(byte[,] I1, byte[,] I2)
+        private byte[,] orImages(byte[,] I1, byte[,] I2)
         {
             if(I1.GetLength(0) != I2.GetLength(0))
                 throw new Exception("The size of the input images does not match in the OR operation");
@@ -585,5 +585,35 @@ namespace INFOIBV
 
             return result;
         }
+
+        private Histogram countValues(byte[,] greyScaleImage)
+        {
+            int[] intensitieCount = new int[256];
+            for (int x = 0; x < InputImage.Size.Width; x++) // loop over columns
+                for (int y = 0; y < InputImage.Size.Height; y++) // loop over rows
+                {
+                    intensitieCount[greyScaleImage[x, y]] += 1;
+
+                }
+            Histogram h = new Histogram();
+            h.intensityValues = intensitieCount;
+
+            int uniqueValues = 0;
+            
+            for (int i = 0; i < 256; i++)
+            {
+                if (intensitieCount[i] != 0)
+                    uniqueValues += 1;
+            }
+
+            h.uniqueValues = (byte)uniqueValues;
+            return h;
+        }
+    }
+
+    struct Histogram
+    {
+        public int[] intensityValues;
+        public byte uniqueValues;
     }
 }
