@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using System.Drawing.Drawing2D;
 
 namespace INFOIBV
 {
@@ -728,13 +729,115 @@ namespace INFOIBV
             h.uniqueValues = (byte)uniqueValues;
             return h;
         }
-    }
 
     struct ElementPoint
     {
         public int x, y;
         public byte value;
     }
+        private List<Point> traceBoundary(byte[,] binaryImage)
+        {
+            Point startingPoint = findStartingPoint(binaryImage);
+            
+            int dir;
+            
+            if (startingPoint.X == 0)
+                dir = 6;
+            else
+                dir = 2;
+
+            int xS, yS; // S = Starting point;
+            int xT, yT; // T = Successor of the starting point;
+            int xP, yP; // P = Previous countour point;
+            int xC, yC; // C = Current countour point;
+
+            Point pt = findStartingPoint(binaryImage); //Find a starting point
+            List<Point> contour = new List<Point>(); //Declare a list of points
+
+            xS = startingPoint.X; //Declare the starting point
+            yS = startingPoint.Y; //Declare the starting point
+            contour.Add(pt);
+
+            int[] p = new[] {pt.X, pt.Y};
+            
+            dir = findNextPoint(dir, p, binaryImage); //Get the next point after the starting point
+
+            xP = xS; //Previous contour point is the starting point
+            yP = yS; //Previous contour point is the starting point
+
+            xT = p[0]; //Declare the successor of the starting point
+            yT = p[1]; 
+            
+            xC = p[0]; //Declare the current point
+            yC = p[1];
+
+            bool done = xS == xT && yS == yT;
+            
+            if(!done)
+                contour.Add(pt);
+
+            while (!done)
+            {
+                p = new int[]{xC, yC};
+                int nDir = (dir + 6) % 8;
+                dir = findNextPoint(nDir, p, binaryImage);
+
+                xP = xC; // Save the location of the precious point;
+                yP = yC;
+
+                xC = p[0]; // Update the current point
+                yC = p[0];
+
+                done = xP == xS && yP == yS && xC == xT && yC == yT;
+                if (!done)
+                    contour.Add(new Point(p[0], p[1]));
+            }
+
+
+            return contour;
+        }
+
+        private Point findStartingPoint(byte[,] binaryImage)
+        {
+            for (int x = 0; x < binaryImage.GetLength(0); x++) // loop over columns
+                for (int y = 0; y < binaryImage.GetLength(1); y++) // loop over rows
+                {
+                    if(binaryImage[x, y] == 1)
+                        return new Point(x, y);
+                }
+            throw new Exception("No boundry");
+        }
+
+        private int findNextPoint(int dir, int[] pt, byte[,] inputImage)
+        {
+            int[,] dirs = {{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}};
+            for (int i = 0; i < 7; i++)
+            {
+                int x = pt[0] + dirs[i,0];
+                int y = pt[1] + dirs[i,1];
+                
+                //Checking if we sampel out of bounds
+                if (x < 0 || x >= inputImage.GetLength(0))
+                    continue;
+                if (y < 0 || y >= inputImage.GetLength(1))
+                    continue;
+
+                if (inputImage[x, y] == 0)
+                {
+                    dir = (dir + 1) % 8;
+                }
+                else
+                {
+                    pt[0] = x;
+                    pt[x] = y;
+                    break;
+                }
+            }
+
+            return dir;
+        }            
+    }
+    
     struct Histogram
     {
         public int[] intensityValues;
