@@ -71,6 +71,8 @@ namespace INFOIBV
             //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
             //workingImage = thresholdImage(workingImage);
             //workingImage = equalizeImage(workingImage);
+            //List<Point> points = traceBoundary(workingImage); 
+            Histogram h = countValues(workingImage);
 
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
@@ -532,7 +534,7 @@ namespace INFOIBV
             progressBar.Value = 1;
             progressBar.Step = 1;
 
-            Byte threshhold = 10;
+            Byte threshhold = 125;
             
             //Apply threshold
             for (int x = 0; x < InputImage.Size.Width; x++) // loop over columns
@@ -561,7 +563,9 @@ namespace INFOIBV
             for(int x = 0; x < I1.GetLength(0); x++)
                 for (int y = 0; y < I1.GetLength(1); y++)
                 {
-                    if (I1[x, y] == 255 && I2[x, y] == 255)
+                    if (I1[x, y] == 0 && I2[x, y] == 0)
+                        result[x, y] = 0;
+                    else
                         result[x, y] = 255;
                 }
 
@@ -580,7 +584,9 @@ namespace INFOIBV
             for(int x = 0; x < I1.GetLength(0); x++)
                 for (int y = 0; y < I1.GetLength(1); y++)
                 {
-                    if (I1[x, y] == 255 || I2[x, y] == 255)
+                    if (I1[x, y] == 0 || I2[x, y] == 0)
+                        result[x, y] = 0;
+                    else
                         result[x, y] = 255;
                 }
 
@@ -648,12 +654,15 @@ namespace INFOIBV
             yC = p[1];
 
             bool done = xS == xT && yS == yT;
-            
-            if(!done)
-                contour.Add(pt);
 
+            if(!done)
+                contour.Add(new Point(xC, yC));
+            
             while (!done)
             {
+                if(contour.Count == 40)
+                    Console.WriteLine("Hello");
+                
                 p = new int[]{xC, yC};
                 int nDir = (dir + 6) % 8;
                 dir = findNextPoint(nDir, p, binaryImage);
@@ -662,9 +671,9 @@ namespace INFOIBV
                 yP = yC;
 
                 xC = p[0]; // Update the current point
-                yC = p[0];
+                yC = p[1];
 
-                done = xP == xS && yP == yS && xC == xT && yC == yT;
+                done = xP == xS && yP == yS || xC == xT && yC == yT;
                 if (!done)
                     contour.Add(new Point(p[0], p[1]));
             }
@@ -678,7 +687,7 @@ namespace INFOIBV
             for (int x = 0; x < binaryImage.GetLength(0); x++) // loop over columns
                 for (int y = 0; y < binaryImage.GetLength(1); y++) // loop over rows
                 {
-                    if(binaryImage[x, y] == 255)
+                    if(binaryImage[x, y] == 0)
                         return new Point(x, y);
                 }
             throw new Exception("No boundry");
@@ -689,8 +698,8 @@ namespace INFOIBV
             int[,] dirs = {{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}};
             for (int i = 0; i < 7; i++)
             {
-                int x = pt[0] + dirs[i,0];
-                int y = pt[1] + dirs[i,1];
+                int x = pt[0] + dirs[dir,0];
+                int y = pt[1] + dirs[dir,1];
                 
                 //Checking if we sampel out of bounds
                 if (x < 0 || x >= inputImage.GetLength(0))
@@ -705,7 +714,7 @@ namespace INFOIBV
                 else
                 {
                     pt[0] = x;
-                    pt[x] = y;
+                    pt[1] = y;
                     break;
                 }
             }
