@@ -72,13 +72,13 @@ namespace INFOIBV
             //workingImage = thresholdImage(workingImage);
             //workingImage = equalizeImage(workingImage);
             //List<Point> points = traceBoundary(workingImage); 
-            //workingImage = erodeImage(workingImage, createStructuringElement('c', 7));
-            //workingImage = dilateImage(workingImage, createStructuringElement('p', 3));
-            //workingImage = openImage(workingImage, createStructuringElement('s', 15));
+            //workingImage = erodeImage(workingImage, createStructuringElement('s', 3));
+            //workingImage = dilateImage(workingImage, createStructuringElement('s', 3));
+            workingImage = invertImage(openImage(thresholdImage(invertImage(workingImage)), createStructuringElement('s', 83)));
             //workingImage = openImage(workingImage, createStructuringElement('s', 9));
+
             //workingImage = invertImage(workingImage);
             //Histogram h = countValues(workingImage);
-
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
 
@@ -576,7 +576,7 @@ namespace INFOIBV
                         {
                             if (inputImage[x + i.x, y + i.y] - i.value < lowest)
                             {
-                                lowest = inputImage[x + i.x, y + i.y] - i.value;
+                                lowest = inputImage[x + i.x, y + i.y];
                             }
                         }
                     }
@@ -602,7 +602,7 @@ namespace INFOIBV
                         {
                             if (inputImage[x + i.x, y + i.y] + i.value > highest)
                             {
-                                highest = (inputImage[x + i.x, y + i.y] + i.value);
+                                highest = (inputImage[x + i.x, y + i.y]);
                             }
                         }
                     }
