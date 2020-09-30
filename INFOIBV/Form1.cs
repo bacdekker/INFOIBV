@@ -64,6 +64,7 @@ namespace INFOIBV
 
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
 
+
             //workingImage = invertImage(workingImage);
             //workingImage = adjustContrast(workingImage);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
@@ -74,11 +75,12 @@ namespace INFOIBV
             //List<Point> points = traceBoundary(workingImage); 
             //workingImage = erodeImage(workingImage, createStructuringElement('s', 3));
             //workingImage = dilateImage(workingImage, createStructuringElement('s', 3));
-            workingImage = invertImage(openImage(thresholdImage(invertImage(workingImage)), createStructuringElement('s', 83)));
+            //workingImage = invertImage(openImage(thresholdImage(invertImage(workingImage)), createStructuringElement('c', 83)));
             //workingImage = openImage(workingImage, createStructuringElement('s', 9));
 
             //workingImage = invertImage(workingImage);
-            //Histogram h = countValues(workingImage);
+            Histogram h = countValues(workingImage);
+
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
 
@@ -738,7 +740,7 @@ namespace INFOIBV
                     uniqueValues += 1;
             }
 
-            h.uniqueValues = (byte)uniqueValues;
+            h.uniqueValues = uniqueValues;
             return h;
         }
 
@@ -852,7 +854,7 @@ namespace INFOIBV
     struct Histogram
     {
         public int[] intensityValues;
-        public byte uniqueValues;
+        public int uniqueValues;
     }
     
 }
