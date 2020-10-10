@@ -80,9 +80,9 @@ namespace INFOIBV
             //workingImage = thresholdImage(houghTransformation(thresholdImage(workingImage, 128)), 128);
             //workingImage = invertImage(workingImage);
             //Histogram h = countValues(workingImage);
-            //List<Point> peaks = houghPeakFinding(workingImage);
-            //Point rThetaPair = peaks[0];
-            //List<Point> lineSegments = houghLineDetection(workingImage, rThetaPair, 128, 10, 3);
+            List<Point> peaks = houghPeakFinding(workingImage);
+            Point rThetaPair = peaks[0];
+            List<Point> lineSegments = houghLineDetection(workingImage, rThetaPair, 128, 10, 3);
 
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
@@ -989,6 +989,7 @@ namespace INFOIBV
                 if (inputImage[x, y] == 255 && segmentCount == 0)
                 {
                     segmentStart = new Point(x, y);
+                    gapCount = 0;
                     segmentCount++;
                 }
                 else if (segmentCount != 0 && inputImage[x, y] == 255)
