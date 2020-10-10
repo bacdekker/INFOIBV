@@ -70,17 +70,19 @@ namespace INFOIBV
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
-            //workingImage = thresholdImage(workingImage);
+            //workingImage = thresholdImage(workingImage, 128);
             //workingImage = equalizeImage(workingImage);
             //List<Point> points = traceBoundary(workingImage); 
             //workingImage = erodeImage(workingImage, createStructuringElement('s', 3));
             //workingImage = dilateImage(workingImage, createStructuringElement('s', 3));
-            //workingImage = invertImage(openImage(thresholdImage(invertImage(workingImage)), createStructuringElement('c', 83)));
+            //workingImage = invertImage(openImage(thresholdImage(invertImage(workingImage), 128), createStructuringElement('c', 83)));
             //workingImage = openImage(workingImage, createStructuringElement('s', 9));
-            //workingImage = thresholdImage(houghTransformation(thresholdImage(workingImage)));
+            //workingImage = thresholdImage(houghTransformation(thresholdImage(workingImage, 128)), 128);
             //workingImage = invertImage(workingImage);
             //Histogram h = countValues(workingImage);
-            List<Point> peaks = houghPeakFinding(workingImage);
+            //List<Point> peaks = houghPeakFinding(workingImage);
+            //Point rThetaPair = peaks[0];
+            //List<Point> lineSegments = houghLineDetection(workingImage, rThetaPair, 128, 10, 3);
 
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
@@ -532,7 +534,7 @@ namespace INFOIBV
          * input:   inputImage          single-channel (byte) image
          * output:                      single-channel (byte) image with on/off values
          */
-        private byte[,] thresholdImage(byte[,] inputImage)
+        private byte[,] thresholdImage(byte[,] inputImage, int threshold)
         {
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
@@ -544,14 +546,13 @@ namespace INFOIBV
             progressBar.Maximum = InputImage.Size.Width * InputImage.Size.Height;
             progressBar.Value = 1;
             progressBar.Step = 1;
-
-            Byte threshhold = 225;
+            
             
             //Apply threshold
             for (int x = 0; x < inputImage.GetLength(0); x++) // loop over columns
                 for (int y = 0; y < inputImage.GetLength(1); y++) // loop over rows
                 {
-                    if (inputImage[x, y] > threshhold)
+                    if (inputImage[x, y] > threshold)
                         tempImage[x, y] = 255;
                     else
                         tempImage[x, y] = 0;
@@ -914,7 +915,7 @@ namespace INFOIBV
                 }
             }
 
-            byte[,] result = thresholdImage(rThetaImage);
+            byte[,] result = thresholdImage(rThetaImage, 200);
             
             List<Point> peaks = new List<Point>();
 
@@ -929,6 +930,99 @@ namespace INFOIBV
 
             return peaks;
         }
+
+        public List<Point> houghLineDetection(byte[,] inputImage, Point rThetaPair, int minimumIntensityThreshold, int minimumLength,
+            int MaximumGap)
+        {
+            inputImage = thresholdImage(inputImage, minimumIntensityThreshold);
+            
+            int r = rThetaPair.X - (inputImage.GetLength(0) / 2) - (inputImage.GetLength(1) / 2) ;
+            int theta = rThetaPair.Y;
+
+            int x = inputImage.GetLength(0) / 2 + (int)(r * Math.Cos(((double) theta) / (180 * Math.PI)));
+            int y = inputImage.GetLength(1) / 2 + (int)(r * Math.Sin(((double) theta) / (180 * Math.PI)));
+            
+            double dx = Math.Cos(((double) theta + 90) / (180 * Math.PI));
+            double dy = Math.Sin(((double) theta + 90) / (180 * Math.PI));
+
+            int nx = x;
+            int ny = x;
+
+            int d = 1;
+            
+            //Getting the line
+            
+            List<Point> Line = new List<Point>();
+            //Getting the line
+            while (nx >= 0 && nx < inputImage.GetLength(0) && ny >= 0 && ny < inputImage.GetLength(1)) 
+            {
+                Line.Add(new Point(nx, ny));
+                d += 1;
+                nx = (int)(x + dx * d);
+                ny = (int) (y + dy * d);
+            }
+
+            Line.Reverse();
+            Line.Add(new Point(x, y));
+            
+            d = -1;
+            nx = (int)(x + dx * d);
+            ny = (int) (y + dy * d);
+            while (nx >= 0 && nx < inputImage.GetLength(0) && ny >= 0 && ny < inputImage.GetLength(1)) 
+            {
+                Line.Add(new Point(nx, ny));
+                d -= 1;
+                nx = (int)(x + dx * d);
+                ny = (int) (y + dy * d);
+            }
+            
+            int segmentCount = 0;
+            int gapCount = 0;
+            Point segmentStart = new Point(-1, -1);
+            
+            List<Point> lineSegments = new List<Point>();
+            for (int i = 0; i < Line.Count; i++)
+            {
+                x = Line[i].X;
+                y = Line[i].Y;
+
+                if (inputImage[x, y] == 255 && segmentCount == 0)
+                {
+                    segmentStart = new Point(x, y);
+                    segmentCount++;
+                }
+                else if (segmentCount != 0 && inputImage[x, y] == 255)
+                {
+                    segmentCount++;
+                    gapCount = 0;
+                }
+                else if (segmentCount != 0 && inputImage[x, y] == 0)
+                {
+                    gapCount++;
+                    if (gapCount == MaximumGap && segmentCount >= minimumLength) //Maximum gap reached and the segment is long enough
+                    {
+                        lineSegments.Add(segmentStart);
+                        lineSegments.Add(Line[i - MaximumGap]);
+                        gapCount = 0;
+                        segmentCount = 0;
+                    }
+                    else if (gapCount == MaximumGap && segmentCount < minimumLength)
+                    {
+                        gapCount = 0;
+                        segmentCount = 0;
+                    }
+                    else
+                    {
+                        segmentCount++;
+                    }
+
+                }
+
+            }
+
+            return lineSegments;
+        }
+        
     }
     struct Histogram
     {
