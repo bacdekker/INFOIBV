@@ -77,10 +77,9 @@ namespace INFOIBV
             //workingImage = dilateImage(workingImage, createStructuringElement('s', 3));
             //workingImage = invertImage(openImage(thresholdImage(invertImage(workingImage)), createStructuringElement('c', 83)));
             //workingImage = openImage(workingImage, createStructuringElement('s', 9));
-            //workingImage = thresholdImage(houghTransformation(thresholdImage(workingImage)));
+
             //workingImage = invertImage(workingImage);
-            //Histogram h = countValues(workingImage);
-            List<Point> peaks = houghPeakFinding(workingImage);
+            Histogram h = countValues(workingImage);
 
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
@@ -545,11 +544,11 @@ namespace INFOIBV
             progressBar.Value = 1;
             progressBar.Step = 1;
 
-            Byte threshhold = 225;
+            Byte threshhold = 125;
             
             //Apply threshold
-            for (int x = 0; x < inputImage.GetLength(0); x++) // loop over columns
-                for (int y = 0; y < inputImage.GetLength(1); y++) // loop over rows
+            for (int x = 0; x < InputImage.Size.Width; x++) // loop over columns
+                for (int y = 0; y < InputImage.Size.Height; y++) // loop over rows
                 {
                     if (inputImage[x, y] > threshhold)
                         tempImage[x, y] = 255;
@@ -848,88 +847,10 @@ namespace INFOIBV
             }
 
             return dir;
-        }
+        }            
         #endregion
-        
-        // Assignment 3
-
-        public byte[,] houghTransformation(byte[,] binairyImage)
-        {
-            int lx = binairyImage.GetLength(0);
-            int ly = binairyImage.GetLength(1);
-
-            //Declaring these values for faster computation
-            int hx = lx / 2; //Half of x and half of y
-            int hy = ly / 2;
-            
-            byte[,] rThetaImage = new byte[180, lx + ly]; // From 100 to -100
-            
-            for(int x = 0; x < lx; x++)
-            {
-                for (int y = 0; y < ly; y++)
-                {
-                    if (binairyImage[x, y] == 255)
-                    {
-                        int translatedX = x - hx;
-                        int translatedY = y - hy;
-                        
-                        for (int theta = 0; theta < 360; theta += 2)
-                        {
-                            double r = translatedX * Math.Cos(((double) theta) / (180 * Math.PI)) +
-                                       translatedY * Math.Sin(((double) theta) / (180 * Math.PI));
-                            rThetaImage[theta / 2, hx + hy + (int) r] += 1;
-                        }
-                    }
-                }    
-            }
-
-            return rThetaImage;
-        }
-
-        public List<Point> houghPeakFinding(byte[,] inputImage)
-        {
-            byte[,] rThetaImage = houghTransformation(inputImage);
-            
-            for (int x = 0; x < rThetaImage.GetLength(0); x++)
-            {
-                for (int y = 0; y < rThetaImage.GetLength(1); y++)
-                {
-                    int localValue = rThetaImage[x, y];
-                    for (int dx = -1; dx < 2; dx++)
-                    {
-                        if (x + dx < 0)
-                            continue;
-                        if (x + dx >= rThetaImage.GetLength(0))
-                            continue;
-                        for (int dy = -1; dy < 2; dy++)
-                        {
-                            if (y + dy < 0)
-                                continue;
-                            if (y + dy >= rThetaImage.GetLength(1))
-                                continue;
-                            if (rThetaImage[x + dx, y + dy] > localValue)
-                                rThetaImage[x, y] = 0;
-                        }
-                    }
-                }
-            }
-
-            byte[,] result = thresholdImage(rThetaImage);
-            
-            List<Point> peaks = new List<Point>();
-
-            for (int x = 0; x < rThetaImage.GetLength(0); x++)
-            {
-                for (int y = 0; y < rThetaImage.GetLength(1); y++)
-                {
-                    if(result[x,y] != 0)
-                        peaks.Add(new Point(y, 2 * x)); // y = r (distance to the middle of the image) and x is theta / 2
-                }
-            }
-
-            return peaks;
-        }
     }
+    
     struct Histogram
     {
         public int[] intensityValues;
