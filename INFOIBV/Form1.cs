@@ -874,7 +874,7 @@ namespace INFOIBV
                         int translatedX = x - hx;
                         int translatedY = y - hy;
                         
-                        for (int theta = 0; theta < 360; theta += 2)
+                        for (int theta = 0; theta < 180; theta += 1)
                         {
                             double r = translatedX * Math.Cos(((double) theta) / (180 * Math.PI)) +
                                        translatedY * Math.Sin(((double) theta) / (180 * Math.PI));
