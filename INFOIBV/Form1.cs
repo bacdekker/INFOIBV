@@ -1025,7 +1025,7 @@ namespace INFOIBV
             double r = (rThetaPair.X - hy) * translation;
             int theta = rThetaPair.Y;
 
-            int x = inputImage.GetLength(1) / 2 + (int)(r * Math.Cos(((double) theta * Math.PI) / (180)));
+            int x = inputImage.GetLength(0) / 2 + (int)(r * Math.Cos(((double) theta * Math.PI) / (180)));
             int y = inputImage.GetLength(1) / 2 + (int)(r * Math.Sin(((double) theta) * Math.PI / (180)));
             
             double dx = Math.Cos(((double) (theta + 90) * Math.PI) / (180 ));
