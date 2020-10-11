@@ -66,7 +66,6 @@ namespace INFOIBV
 
 
             //workingImage = invertImage(workingImage);
-            //workingImage = adjustContrast(workingImage);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
@@ -80,9 +79,11 @@ namespace INFOIBV
             //workingImage = thresholdImage(houghTransformation(thresholdImage(workingImage, 128)), 128);
             //workingImage = invertImage(workingImage);
             //Histogram h = countValues(workingImage);
-            //List<Point> peaks = houghPeakFinding(workingImage);
-            //Point rThetaPair = peaks[0];
-            //List<Point> lineSegments = houghLineDetection(workingImage, rThetaPair, 128, 10, 3);
+            List<Point> peaks = houghPeakFinding(workingImage);
+            Point rThetaPair = peaks[0];
+            List<Point> lineSegments = houghLineDetection(workingImage, rThetaPair, 128, 10, 3);
+            workingImage = imposeLines(workingImage, lineSegments);
+
 
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
@@ -1022,7 +1023,28 @@ namespace INFOIBV
 
             return lineSegments;
         }
-        
+        public byte[,] imposeLines(byte[,] workingImage, List<Point> lines)
+        {
+            for (int i = 0; i < lines.Count; i+=2)
+            {
+                Point start = lines[i];
+
+                Point end = lines[i + 1];
+                int dx = end.X - start.X;
+                int dy = end.Y - start.Y;
+                for (int x = start.X; x < end.X; x++)
+                {
+                    int y = start.Y + dy * (x - start.X) / dx;
+                    if (x >= 0 && x < workingImage.GetLength(0) && y >= 0 && y < workingImage.GetLength(1))
+                    {
+                        workingImage[x, y] = 0;
+                    }
+
+                }
+            }
+
+            return workingImage;
+        }
     }
     struct Histogram
     {
