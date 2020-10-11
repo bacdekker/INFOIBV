@@ -888,27 +888,19 @@ namespace INFOIBV
             
             float[,] rThetaImage = new float[180, ly]; // From 100 to -100
 
-            int counter = 0;
-            
             for(int x = 0; x < lx; x++)
             {
                 int translatedX = x - hx;
                 for (int y = 0; y < ly; y++)
                 {
-                    if (binairyImage[x, y] == 255)
+                    int translatedY = y - hy;
+                    for (int theta = 0; theta < 180; theta += 1)
                     {
-                        int translatedY = y - hy;
-                        for (int theta = 0; theta < 180; theta += 1)
-                        {
-                            double r = translatedX * Math.Cos(theta * Math.PI / 180) +
-                                       translatedY * Math.Sin(theta * Math.PI / 180);
-                            r /= translation;
+                        double r = translatedX * Math.Cos(theta * Math.PI / 180) +
+                                   translatedY * Math.Sin(theta * Math.PI / 180);
+                        r /= translation;
 
-                            if (Math.Round(r) == 0 || Math.Round(r) == -1 || Math.Round(r) == 1)
-                                counter++;
-                            
-                            rThetaImage[theta, hy + (int)Math.Floor(r)] += 1;
-                        }
+                        rThetaImage[theta, hy + (int) Math.Floor(r)] += ((float) binairyImage[x, y]) / 255;
                     }
                 }    
             }
