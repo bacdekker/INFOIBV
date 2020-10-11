@@ -79,12 +79,14 @@ namespace INFOIBV
             //workingImage = thresholdImage(houghTransformation(thresholdImage(workingImage, 128)), 128);
             //workingImage = invertImage(workingImage);
             //Histogram h = countValues(workingImage);
-            List<Point> peaks = houghPeakFinding(workingImage);
-            Point rThetaPair = peaks[0];
-            List<Point> lineSegments = houghLineDetection(workingImage, rThetaPair, 128, 10, 3);
-            workingImage = imposeLines(workingImage, lineSegments);
-
-
+            //workingImage = houghTransformation(invertImage(workingImage));
+            //List<Point> peaks = houghPeakFinding(workingImage);
+            //Point rThetaPair = peaks[0];
+            //List<Point> lineSegments = houghLineDetection(workingImage, rThetaPair, 128, 50, 10);
+            //workingImage = houghTransformation(invertImage(workingImage));
+            List<Point> peaks = houghPeakFinding(invertImage(workingImage));
+            List<Point> lineSegments = houghLineDetection(invertImage(workingImage), peaks[1], 
+                128, 50, 10);
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
 
@@ -855,7 +857,7 @@ namespace INFOIBV
         
         // Assignment 3
 
-        public byte[,] houghTransformation(byte[,] binairyImage)
+        public float[,] houghTransformation(byte[,] binairyImage)
         {
             int lx = binairyImage.GetLength(0);
             int ly = binairyImage.GetLength(1);
@@ -863,23 +865,32 @@ namespace INFOIBV
             //Declaring these values for faster computation
             int hx = lx / 2; //Half of x and half of y
             int hy = ly / 2;
+
+            double maxRadius = Math.Sqrt(Math.Pow(hx, 2) + Math.Pow(hy, 2));
+            double translation = (double) (2 * maxRadius) / ly; //To translate the image
             
-            byte[,] rThetaImage = new byte[180, lx + ly]; // From 100 to -100
+            float[,] rThetaImage = new float[180, ly]; // From 100 to -100
+
+            int counter = 0;
             
             for(int x = 0; x < lx; x++)
             {
+                int translatedX = x - hx;
                 for (int y = 0; y < ly; y++)
                 {
                     if (binairyImage[x, y] == 255)
                     {
-                        int translatedX = x - hx;
                         int translatedY = y - hy;
-                        
-                        for (int theta = 0; theta < 360; theta += 2)
+                        for (int theta = 0; theta < 180; theta += 1)
                         {
-                            double r = translatedX * Math.Cos(((double) theta) / (180 * Math.PI)) +
-                                       translatedY * Math.Sin(((double) theta) / (180 * Math.PI));
-                            rThetaImage[theta / 2, hx + hy + (int) r] += 1;
+                            double r = translatedX * Math.Cos(theta * Math.PI / 180) +
+                                       translatedY * Math.Sin(theta * Math.PI / 180);
+                            r /= translation;
+
+                            if (Math.Round(r) == 0 || Math.Round(r) == -1 || Math.Round(r) == 1)
+                                counter++;
+                            
+                            rThetaImage[theta, hy + (int)Math.Floor(r)] += 1;
                         }
                     }
                 }    
@@ -887,16 +898,23 @@ namespace INFOIBV
 
             return rThetaImage;
         }
-
+        
         public List<Point> houghPeakFinding(byte[,] inputImage)
         {
-            byte[,] rThetaImage = houghTransformation(inputImage);
+            float[,] rThetaImage = houghTransformation(inputImage);
+            float[,] temporary = new float[rThetaImage.GetLength(0), rThetaImage.GetLength(1)];
+            int max = 0;
             
             for (int x = 0; x < rThetaImage.GetLength(0); x++)
             {
                 for (int y = 0; y < rThetaImage.GetLength(1); y++)
                 {
-                    int localValue = rThetaImage[x, y];
+                    temporary[x, y] = rThetaImage[x, y];
+                    
+                    max = Math.Max(max, (int)rThetaImage[x, y]);
+                    
+                    float localValue = rThetaImage[x, y];
+                    
                     for (int dx = -1; dx < 2; dx++)
                     {
                         if (x + dx < 0)
@@ -910,13 +928,11 @@ namespace INFOIBV
                             if (y + dy >= rThetaImage.GetLength(1))
                                 continue;
                             if (rThetaImage[x + dx, y + dy] > localValue)
-                                rThetaImage[x, y] = 0;
+                                temporary[x, y] = 0;
                         }
                     }
                 }
             }
-
-            byte[,] result = thresholdImage(rThetaImage, 200);
             
             List<Point> peaks = new List<Point>();
 
@@ -924,8 +940,8 @@ namespace INFOIBV
             {
                 for (int y = 0; y < rThetaImage.GetLength(1); y++)
                 {
-                    if(result[x,y] != 0)
-                        peaks.Add(new Point(y, 2 * x)); // y = r (distance to the middle of the image) and x is theta / 2
+                    if(temporary[x,y] >  (max * 0.5))
+                        peaks.Add(new Point(y, x)); // y = r (distance to the middle of the image) and x is theta / 2
                 }
             }
 
@@ -937,17 +953,27 @@ namespace INFOIBV
         {
             inputImage = thresholdImage(inputImage, minimumIntensityThreshold);
             
-            int r = rThetaPair.X - (inputImage.GetLength(0) / 2) - (inputImage.GetLength(1) / 2) ;
+            int lx = inputImage.GetLength(0);
+            int ly = inputImage.GetLength(1);
+
+            //Declaring these values for faster computation
+            int hx = lx / 2; //Half of x and half of y
+            int hy = ly / 2;
+
+            double maxRadius = Math.Sqrt(Math.Pow(hx, 2) + Math.Pow(hy, 2));
+            double translation = (double) (maxRadius) / hy; //To translate the image
+
+            double r = (rThetaPair.X - hy) * translation;
             int theta = rThetaPair.Y;
 
-            int x = inputImage.GetLength(0) / 2 + (int)(r * Math.Cos(((double) theta) / (180 * Math.PI)));
-            int y = inputImage.GetLength(1) / 2 + (int)(r * Math.Sin(((double) theta) / (180 * Math.PI)));
+            int x = inputImage.GetLength(1) / 2 + (int)(r * Math.Cos(((double) theta * Math.PI) / (180)));
+            int y = inputImage.GetLength(1) / 2 + (int)(r * Math.Sin(((double) theta) * Math.PI / (180)));
             
-            double dx = Math.Cos(((double) theta + 90) / (180 * Math.PI));
-            double dy = Math.Sin(((double) theta + 90) / (180 * Math.PI));
+            double dx = Math.Cos(((double) (theta + 90) * Math.PI) / (180 ));
+            double dy = Math.Sin(((double) (theta + 90) * Math.PI) / (180));
 
             int nx = x;
-            int ny = x;
+            int ny = y;
 
             int d = 1;
             
@@ -990,6 +1016,7 @@ namespace INFOIBV
                 if (inputImage[x, y] == 255 && segmentCount == 0)
                 {
                     segmentStart = new Point(x, y);
+                    gapCount = 0;
                     segmentCount++;
                 }
                 else if (segmentCount != 0 && inputImage[x, y] == 255)
@@ -1019,6 +1046,12 @@ namespace INFOIBV
 
                 }
 
+            }
+
+            if (segmentCount >= minimumLength)
+            {
+                lineSegments.Add(segmentStart);
+                lineSegments.Add(Line[Line.Count - 1]);
             }
 
             return lineSegments;
