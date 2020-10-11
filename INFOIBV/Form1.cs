@@ -54,7 +54,7 @@ namespace INFOIBV
             // copy input Bitmap to array            
             for (int x = 0; x < InputImage.Size.Width; x++)                 // loop over columns
                 for (int y = 0; y < InputImage.Size.Height; y++)            // loop over rows
-                    Image[x, y] = InputImage.GetPixel(x, y);                // set pixel color in array at (x,y)
+                    Image[x, y] = InputImage.GetPixel(x, y);                // set pixel color in array at (x,y)=
 
             // ====================================================================
             // =================== YOUR FUNCTION CALLS GO HERE ====================
@@ -67,15 +67,15 @@ namespace INFOIBV
 
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
-            //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
+
             //workingImage = thresholdImage(workingImage, 128);
+            //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
             //workingImage = equalizeImage(workingImage);
             //List<Point> points = traceBoundary(workingImage); 
             //workingImage = erodeImage(workingImage, createStructuringElement('s', 3));
             //workingImage = dilateImage(workingImage, createStructuringElement('s', 3));
-            //workingImage = invertImage(openImage(thresholdImage(invertImage(workingImage), 128), createStructuringElement('c', 83)));
+            //workingImage = invertImage(openImage(thresholdImage(invertImage(workingImage), 128), createStructuringElement('c', 15)));
             //workingImage = openImage(workingImage, createStructuringElement('s', 9));
-            //workingImage = thresholdImage(houghTransformation(thresholdImage(workingImage, 128)), 128);
             //workingImage = invertImage(workingImage);
             //Histogram h = countValues(workingImage);
             //workingImage = houghTransformation(invertImage(workingImage));
@@ -83,20 +83,27 @@ namespace INFOIBV
             //Point rThetaPair = peaks[0];
             //List<Point> lineSegments = houghLineDetection(workingImage, rThetaPair, 128, 50, 10);
             //workingImage = houghTransformation(invertImage(workingImage));
-            workingImage = imposeLines(workingImage, new List<Point> {
-                                                                    new Point(100,100), new Point(100, 10),
-                                                                    new Point(100,100), new Point(190, 10),
-                                                                    new Point(100,100), new Point(190, 100),
-                                                                    new Point(100,100), new Point(190, 190),
-                                                                    new Point(100,100), new Point(100, 190),
-                                                                    new Point(100,100), new Point(10, 190),
-                                                                    new Point(100,100), new Point(10, 10),
-                                                                    new Point(100,100), new Point(10, 100)
-                                                                    }, 255, 0.5f);
 
-            //List<Point> peaks = houghPeakFinding(workingImage);
-            //List<Point> lineSegments = houghLineDetection(workingImage, peaks[1], 128, 50, 20);
-            //workingImage = imposeLines(workingImage, lineSegments, 255, 0.5f);
+            //workingImage = imposeLines(workingImage, new List<Point> {
+            //                                                        new Point(100,100), new Point(100, 10),
+            //                                                        new Point(100,100), new Point(190, 10),
+            //                                                        new Point(100,100), new Point(190, 100),
+            //                                                        new Point(100,100), new Point(190, 190),
+            //                                                        new Point(100,100), new Point(100, 190),
+            //                                                        new Point(100,100), new Point(10, 190),
+            //                                                        new Point(100,100), new Point(10, 10),
+            //                                                        new Point(100,100), new Point(10, 100)
+            //                                                        }, 255, 0.0f);
+            List<Point> peaks = houghPeakFinding(invertImage(workingImage), houghTransformation(invertImage(workingImage)));
+            //List<Point> peaks = houghPeakFinding(invertImage(workingImage), houghTransformAngles(invertImage(workingImage), 50, 180));
+            List<Point> lineSegments = new List<Point>();
+            foreach (Point i in peaks)
+            {
+                List<Point> temp = houghLineDetection(invertImage(workingImage), i, 128, 50, 10);
+                lineSegments.AddRange(temp);
+            }
+
+            workingImage = imposeLines(workingImage, lineSegments, 255, 0.1f);
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
 
@@ -908,10 +915,52 @@ namespace INFOIBV
 
             return rThetaImage;
         }
-        
-        public List<Point> houghPeakFinding(byte[,] inputImage)
+        public float[,] houghTransformAngles(byte[,] binairyImage, int min, int max)
         {
-            float[,] rThetaImage = houghTransformation(inputImage);
+            int lx = binairyImage.GetLength(0);
+            int ly = binairyImage.GetLength(1);
+            if (min > max) throw new Exception("min needs to be lower than max");
+            if (min < 0) throw new Exception("min needs to be higher than 0 ");
+            if (max > 180) throw new Exception("max cannot exceed 180 degrees");
+            //Declaring these values for faster computation
+            int hx = lx / 2; //Half of x and half of y
+            int hy = ly / 2;
+
+            double maxRadius = Math.Sqrt(Math.Pow(hx, 2) + Math.Pow(hy, 2));
+            double translation = (double)(2 * maxRadius) / ly; //To translate the image
+
+            float[,] rThetaImage = new float[180, ly]; // From 100 to -100
+
+            int counter = 0;
+
+            for (int x = 0; x < lx; x++)
+            {
+                int translatedX = x - hx;
+                for (int y = 0; y < ly; y++)
+                {
+                    if (binairyImage[x, y] == 255)
+                    {
+                        int translatedY = y - hy;
+                        for (int theta = min; theta < max; theta += 1)
+                        {
+                            double r = translatedX * Math.Cos(theta * Math.PI / 180) +
+                                       translatedY * Math.Sin(theta * Math.PI / 180);
+                            r /= translation;
+
+                            if (Math.Round(r) == 0 || Math.Round(r) == -1 || Math.Round(r) == 1)
+                                counter++;
+
+                            rThetaImage[theta, hy + (int)Math.Floor(r)] += 1;
+                        }
+                    }
+                }
+            }
+
+            return rThetaImage;
+        }
+
+        public List<Point> houghPeakFinding(byte[,] inputImage, float[,] rThetaImage)
+        {
             float[,] temporary = new float[rThetaImage.GetLength(0), rThetaImage.GetLength(1)];
             int max = 0;
             
@@ -1066,21 +1115,23 @@ namespace INFOIBV
 
             return lineSegments;
         }
+
         public byte[,] imposeLines(byte[,] workingImage, List<Point> lines, byte color, float transparency)
         {
-            for (int x = 0; x < workingImage.GetLength(0); x++)
+            for (int x = 0; x < workingImage.GetLength(0); x++) //lower brightness of image to see the lines more clearly
             {
                 for (int y = 0; y < workingImage.GetLength(1); y++)
                 {
                     workingImage[x, y] = (byte)(workingImage[x,y] * transparency);
                 }
             }
+
             for (int i = 0; i < lines.Count; i+=2)
             {
                 Point start;
                 Point end;
                 
-                if (lines[i].X == lines[i + 1].X)
+                if (lines[i].X == lines[i + 1].X) //vertical lines
                 {
                     int high = Math.Max(lines[i].Y, lines[i + 1].Y);
                     int low = Math.Min(lines[i].Y, lines[i + 1].Y);
@@ -1114,7 +1165,6 @@ namespace INFOIBV
                     }
                 }
             }
-
             return workingImage;
         }
     }
