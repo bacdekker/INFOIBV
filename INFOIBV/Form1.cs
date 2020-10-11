@@ -922,9 +922,7 @@ namespace INFOIBV
             double translation = (double)(2 * maxRadius) / ly; //To translate the image
 
             float[,] rThetaImage = new float[180, ly]; // From 100 to -100
-
-            int counter = 0;
-
+            
             for (int x = 0; x < lx; x++)
             {
                 int translatedX = x - hx;
@@ -939,10 +937,7 @@ namespace INFOIBV
                                        translatedY * Math.Sin(theta * Math.PI / 180);
                             r /= translation;
 
-                            if (Math.Round(r) == 0 || Math.Round(r) == -1 || Math.Round(r) == 1)
-                                counter++;
-
-                            rThetaImage[theta, hy + (int)Math.Floor(r)] += 1;
+                            rThetaImage[theta, hy + (int)Math.Floor(r)] += ((float)binairyImage[x, y]) / 255;
                         }
                     }
                 }
