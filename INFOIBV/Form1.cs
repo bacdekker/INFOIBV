@@ -65,7 +65,6 @@ namespace INFOIBV
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
 
 
-            //workingImage = invertImage(workingImage);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
@@ -84,9 +83,20 @@ namespace INFOIBV
             //Point rThetaPair = peaks[0];
             //List<Point> lineSegments = houghLineDetection(workingImage, rThetaPair, 128, 50, 10);
             //workingImage = houghTransformation(invertImage(workingImage));
-            List<Point> peaks = houghPeakFinding(invertImage(workingImage));
-            List<Point> lineSegments = houghLineDetection(invertImage(workingImage), peaks[1], 
-                128, 50, 10);
+            workingImage = imposeLines(workingImage, new List<Point> {
+                                                                    new Point(100,100), new Point(100, 10),
+                                                                    new Point(100,100), new Point(190, 10),
+                                                                    new Point(100,100), new Point(190, 100),
+                                                                    new Point(100,100), new Point(190, 190),
+                                                                    new Point(100,100), new Point(100, 190),
+                                                                    new Point(100,100), new Point(10, 190),
+                                                                    new Point(100,100), new Point(10, 10),
+                                                                    new Point(100,100), new Point(10, 100)
+                                                                    }, 255, 0.5f);
+
+            //List<Point> peaks = houghPeakFinding(workingImage);
+            //List<Point> lineSegments = houghLineDetection(workingImage, peaks[1], 128, 50, 20);
+            //workingImage = imposeLines(workingImage, lineSegments, 255, 0.5f);
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
 
@@ -1056,23 +1066,52 @@ namespace INFOIBV
 
             return lineSegments;
         }
-        public byte[,] imposeLines(byte[,] workingImage, List<Point> lines)
+        public byte[,] imposeLines(byte[,] workingImage, List<Point> lines, byte color, float transparency)
         {
+            for (int x = 0; x < workingImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < workingImage.GetLength(1); y++)
+                {
+                    workingImage[x, y] = (byte)(workingImage[x,y] * transparency);
+                }
+            }
             for (int i = 0; i < lines.Count; i+=2)
             {
-                Point start = lines[i];
-
-                Point end = lines[i + 1];
-                int dx = end.X - start.X;
-                int dy = end.Y - start.Y;
-                for (int x = start.X; x < end.X; x++)
+                Point start;
+                Point end;
+                
+                if (lines[i].X == lines[i + 1].X)
                 {
-                    int y = start.Y + dy * (x - start.X) / dx;
-                    if (x >= 0 && x < workingImage.GetLength(0) && y >= 0 && y < workingImage.GetLength(1))
+                    int high = Math.Max(lines[i].Y, lines[i + 1].Y);
+                    int low = Math.Min(lines[i].Y, lines[i + 1].Y);
+                    for (int y = 0; y < high - low; y++)
                     {
-                        workingImage[x, y] = 0;
+                        workingImage[lines[i].X, low + y] = color;
                     }
+                }
+                else
+                {
+                    if (lines[i].X > lines[i + 1].X)
+                    {
+                        start = lines[i + 1];
+                        end = lines[i];
+                    }
+                    else
+                    {
+                        start = lines[i];
+                        end = lines[i + 1];
+                    }
+                    int dx = end.X - start.X;
+                    int dy = end.Y - start.Y;
+                    for (int x = start.X; x < end.X; x++)
+                    {
+                        int y = start.Y + dy * (x - start.X) / dx;
+                        if (x >= 0 && x < workingImage.GetLength(0) && y >= 0 && y < workingImage.GetLength(1))
+                        {
+                            workingImage[x, y] = color;
+                        }
 
+                    }
                 }
             }
 
