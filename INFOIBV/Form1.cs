@@ -63,8 +63,8 @@ namespace INFOIBV
 
 
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
-
-
+            workingImage = pipeLine(workingImage);
+            
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
 
@@ -94,16 +94,16 @@ namespace INFOIBV
             //                                                        new Point(100,100), new Point(10, 10),
             //                                                        new Point(100,100), new Point(10, 100)
             //                                                        }, 255, 0.0f);
-            List<Point> peaks = houghPeakFinding(invertImage(workingImage), houghTransformation(invertImage(workingImage)));
+            //List<Point> peaks = houghPeakFinding(invertImage(workingImage), houghTransformation(invertImage(workingImage)));
             //List<Point> peaks = houghPeakFinding(invertImage(workingImage), houghTransformAngles(invertImage(workingImage), 50, 180));
-            List<Point> lineSegments = new List<Point>();
-            foreach (Point i in peaks)
-            {
-                List<Point> temp = houghLineDetection(invertImage(workingImage), i, 128, 50, 10);
-                lineSegments.AddRange(temp);
-            }
+            //List<Point> lineSegments = new List<Point>();
+            //foreach (Point i in peaks)
+            //{
+            //    List<Point> temp = houghLineDetection(invertImage(workingImage), i, 128, 50, 10);
+            //    lineSegments.AddRange(temp);
+            //}
 
-            workingImage = imposeLines(workingImage, lineSegments, 255, 0.1f);
+            //workingImage = imposeLines(workingImage, lineSegments, 255, 0.1f);
             // ==================== END OF YOUR FUNCTION CALLS ====================
             // ====================================================================
 
@@ -163,6 +163,21 @@ namespace INFOIBV
             progressBar.Visible = false;                                    // hide progress bar
 
             return tempImage;
+        }
+
+        private sbyte[,] contrastSharpener()
+        {
+            sbyte[,] sharpener = new sbyte[3,3];
+            sharpener[0, 0] = 0;
+            sharpener[0, 1] = -1;
+            sharpener[0, 2] = 0;
+            sharpener[1, 0] = -1;
+            sharpener[1, 1] = 4;
+            sharpener[1, 2] = -1;
+            sharpener[2, 0] = 0;
+            sharpener[2, 1] = -1;
+            sharpener[2, 2] = 0;
+            return sharpener;
         }
         
         private sbyte[,] HorizontalKernel()
@@ -1154,7 +1169,55 @@ namespace INFOIBV
             }
             return workingImage;
         }
+        private byte[,] pipeLine(byte[,] inputImage)
+        {
+            byte[,] equalizedImage = equalizeImage(inputImage);
+            byte[,] blurredImage = convolveImage(equalizedImage, createGaussianFilter(3, 1f));
+            byte[,] pipeLinedImage = sharpenEdges(blurredImage);
+            return pipeLinedImage;
+        }
+
+        private byte[,] sharpenEdges(byte[,] inputImage)
+        {
+            byte[,] copy = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
+            sbyte[,] sharpener = contrastSharpener();
+            
+            for (int x = 0; x < InputImage.Size.Width; x++) // loop over columns
+            {
+                for (int y = 0; y < InputImage.Size.Height; y++) // loop over rows
+                {
+                    int Greyvalue = 0;
+                    for (int i = -1; i <= 1; i++)
+                    {
+                        // Extending the image in in case we encounter borders
+                        int xPixel = x + i;
+                        if (xPixel >= InputImage.Size.Width)
+                            xPixel = InputImage.Size.Width - 1;
+                        if (xPixel < 0)
+                            xPixel = 0;
+                        for (int j = -1; j <= 1; j++)
+                        {
+                            // Extending the image in case we encounter borders
+                            int yPixel = y + j;
+                            if (yPixel >= InputImage.Size.Height)
+                                yPixel = InputImage.Size.Height - 1;
+                            if (yPixel < 0)
+                                yPixel = 0;
+
+                            Greyvalue += sharpener[i + 1, j + 1] * inputImage[xPixel, yPixel];
+                        }
+                    }
+
+                    Greyvalue = Math.Min(Greyvalue, 255);
+                    Greyvalue = Math.Max(Greyvalue, 0);
+                    copy[x, y] = (byte)Greyvalue;
+                }
+            }
+            return copy;
+        }
     }
+    
+    
     struct Histogram
     {
         public int[] intensityValues;
