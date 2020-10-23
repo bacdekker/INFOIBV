@@ -32,11 +32,11 @@ namespace INFOIBV
                 imageFileName.Text = file;                                  // show file name
                 if (InputImage != null) InputImage.Dispose();               // reset image
                 InputImage = new Bitmap(file);                              // create new Bitmap from file
-                //if (InputImage.Size.Height <= 0 || InputImage.Size.Width <= 0 ||
-                //    InputImage.Size.Height > 512 || InputImage.Size.Width > 512) // dimension check (may be removed or altered)
-                //    MessageBox.Show("Error in image dimensions (have to be > 0 and <= 512)");
-                //else
-                    pictureBox1.Image = (Image)InputImage;                 // display input image
+                                                                            //if (InputImage.Size.Height <= 0 || InputImage.Size.Width <= 0 ||
+                                                                            //    InputImage.Size.Height > 512 || InputImage.Size.Width > 512) // dimension check (may be removed or altered)
+                                                                            //    MessageBox.Show("Error in image dimensions (have to be > 0 and <= 512)");
+                                                                            //else
+                pictureBox1.Image = (Image)InputImage;                 // display input image
             }
         }
 
@@ -64,7 +64,10 @@ namespace INFOIBV
 
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
             workingImage = pipeLine(workingImage);
-            
+            List<Point> corners = harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5));
+            drawPoints(workingImage, corners, 9, 255);
+
+            //workingImage = drawPoints(workingImage, harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5)) , 9, 255);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
 
@@ -128,7 +131,7 @@ namespace INFOIBV
             if (saveImageDialog.ShowDialog() == DialogResult.OK)
                 OutputImage.Save(saveImageDialog.FileName);                 // save the output image
         }
-        
+
         #region Assignment1
 
 
@@ -167,7 +170,7 @@ namespace INFOIBV
 
         private sbyte[,] contrastSharpener()
         {
-            sbyte[,] sharpener = new sbyte[3,3];
+            sbyte[,] sharpener = new sbyte[3, 3];
             sharpener[0, 0] = 0;
             sharpener[0, 1] = -1;
             sharpener[0, 2] = 0;
@@ -179,11 +182,11 @@ namespace INFOIBV
             sharpener[2, 2] = 0;
             return sharpener;
         }
-        
+
         private sbyte[,] HorizontalKernel()
         {
             // According to prewitt
-            sbyte[,] hKernel = new sbyte[3,3];
+            sbyte[,] hKernel = new sbyte[3, 3];
             hKernel[0, 0] = -1;
             hKernel[0, 1] = -1;
             hKernel[0, 2] = -1;
@@ -198,7 +201,7 @@ namespace INFOIBV
 
         private sbyte[,] VerticalKernel()
         {
-            sbyte[,] vKernel = new sbyte[3,3];
+            sbyte[,] vKernel = new sbyte[3, 3];
             vKernel[0, 0] = -1;
             vKernel[1, 0] = -1;
             vKernel[2, 0] = -1;
@@ -241,8 +244,8 @@ namespace INFOIBV
             int[] cumulativeHistogram = makeHistogramCumulative(histogram);
 
             int size = InputImage.Size.Width * InputImage.Size.Height;
-            
-            for(int x = 0; x < InputImage.Size.Width; x++)
+
+            for (int x = 0; x < InputImage.Size.Width; x++)
                 for (int y = 0; y < InputImage.Size.Height; y++)
                 {
                     byte greyValue = inputImage[x, y];
@@ -252,7 +255,7 @@ namespace INFOIBV
 
             return inputImage;
         }
-        
+
         /*
          * invertImage: invert a single channel (grayscale) image
          * input:   inputImage          single-channel (byte) image
@@ -378,42 +381,42 @@ namespace INFOIBV
             {
                 for (int y = 0; y < tempImage.GetLength(1); y++)
                 {
-                    tempImage[x, y] = (byte) avg;
-                }
-            }
-            
-            for (int x = 0; x < inputImage.GetLength(0); x++)       //stretch top
-            {
-                for (int y = 0; y < offset[1]; y++)
-                {
-                    tempImage[x + offset[0], y] = inputImage[x, 0];
+                    tempImage[x, y] = (byte)avg;
                 }
             }
 
-            for (int x = 0; x < offset[0]; x++)                     //stretch left
-            {
-                for (int y = 0; y < inputImage.GetLength(1); y++)
-                {
-                    tempImage[x, y] = inputImage[0, y];
-                }
-            }
+            //for (int x = 0; x < inputImage.GetLength(0); x++)       //stretch top
+            //{
+            //    for (int y = 0; y < offset[1]; y++)
+            //    {
+            //        tempImage[x + offset[0], y] = inputImage[x, 0];
+            //    }
+            //}
 
-            for (int x = 0; x < inputImage.GetLength(0); x++)       //stretch bottom
-            {
-                for (int y = 0; y < offset[1]; y++)
-                {
-                    tempImage[x + offset[0], y + inputImage.GetLength(1) + offset[1]] = inputImage[x, inputImage.GetLength(1) - 1];
-                }
-            }
+            //for (int x = 0; x < offset[0]; x++)                     //stretch left
+            //{
+            //    for (int y = 0; y < inputImage.GetLength(1); y++)
+            //    {
+            //        tempImage[x, y] = inputImage[0, y];
+            //    }
+            //}
 
-            for (int x = 0; x < offset[0]; x++)
-            {
-                for (int y = 0; y < inputImage.GetLength(1); y++)   //stretch right
-                {
-                    tempImage[x + inputImage.GetLength(0) + offset[1], y + offset[0]] = inputImage[inputImage.GetLength(1) - 1, y];
-                }
-            }
-            
+            //for (int x = 0; x < inputImage.GetLength(0); x++)       //stretch bottom
+            //{
+            //    for (int y = 0; y < offset[1]; y++)
+            //    {
+            //        tempImage[x + offset[0], y + inputImage.GetLength(1) - 1 + offset[1]] = inputImage[x, inputImage.GetLength(1) - 1];
+            //    }
+            //}
+
+            //for (int x = 0; x < offset[0]; x++)
+            //{
+            //    for (int y = 0; y < inputImage.GetLength(1); y++)   //stretch right
+            //    {
+            //        tempImage[x + inputImage.GetLength(0) - 1 + offset[0], y + offset[1]] = inputImage[inputImage.GetLength(1) - 1, y];
+            //    }
+            //}
+
             for (int x = 0; x < inputImage.GetLength(0); x++) //insert image in middle
             {
                 for (int y = 0; y < inputImage.GetLength(1); y++)
@@ -423,7 +426,7 @@ namespace INFOIBV
             }
 
             //loops over every pixel, and for each pixel applies the filter with another loop. The value of each multiplication is summed and creates a final image.
-            for (int x = 0; x < finalImage.GetLength(0); x++)   
+            for (int x = 0; x < finalImage.GetLength(0); x++)
             {
                 for (int y = 0; y < finalImage.GetLength(1); y++)
                 {
@@ -432,7 +435,7 @@ namespace INFOIBV
                     {
                         for (int yf = 0; yf < filter.GetLength(1); yf++)
                         {
-                            val += filter[xf, yf] * tempImage[x  + xf, y + yf];
+                            val += filter[xf, yf] * tempImage[x + xf, y + yf];
                         }
                     }
 
@@ -459,7 +462,7 @@ namespace INFOIBV
                 throw new Exception("No definition for even size");
 
             // I assume that the size is always uneven
-            
+
             // setup progress bar
             progressBar.Visible = true;
             progressBar.Minimum = 1;
@@ -479,7 +482,7 @@ namespace INFOIBV
                             Xindex += InputImage.Size.Width;
                         if (Xindex >= InputImage.Size.Width)
                             Xindex -= InputImage.Size.Width;
-                        
+
                         for (int j = (size - 1 / 2) - size; j <= ((size - 1) / 2); j++)
                         {
                             int Yindex = j + y;
@@ -487,7 +490,7 @@ namespace INFOIBV
                                 Yindex += InputImage.Size.Height;
                             if (Yindex >= InputImage.Size.Height)
                                 Yindex -= InputImage.Size.Height;
-                            
+
                             greyValues.Add(inputImage[Xindex, Yindex]);
                         }
                     }
@@ -497,8 +500,8 @@ namespace INFOIBV
 
                     progressBar.PerformStep(); // increment progress bar
                 }
-            
-            progressBar.Visible = false;      
+
+            progressBar.Visible = false;
 
             return tempImage;
         }
@@ -514,12 +517,12 @@ namespace INFOIBV
         {
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
-            
-            if(horizontalKernel.GetLength(0) != 3 || horizontalKernel.GetLength(1) != 3)
+
+            if (horizontalKernel.GetLength(0) != 3 || horizontalKernel.GetLength(1) != 3)
                 throw new Exception("Unexpected horizontal kernel size");
-            if(verticalKernel.GetLength(0) != 3 || verticalKernel.GetLength(1) != 3)
+            if (verticalKernel.GetLength(0) != 3 || verticalKernel.GetLength(1) != 3)
                 throw new Exception("Unexpected vertical kernel size");
-            
+
             // setup progress bar
             progressBar.Visible = true;
             progressBar.Minimum = 1;
@@ -555,7 +558,7 @@ namespace INFOIBV
                         }
                     }
 
-                    tempImage[x, y] = (Byte) (Math.Sqrt(Math.Pow(DX, 2) + Math.Pow(DY, 2)) / 6);
+                    tempImage[x, y] = (Byte)(Math.Sqrt(Math.Pow(DX, 2) + Math.Pow(DY, 2)) / 6);
                     progressBar.PerformStep();
 
                 }
@@ -573,7 +576,7 @@ namespace INFOIBV
         {
             // create temporary grayscale image
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
-            
+
 
             // setup progress bar
             progressBar.Visible = true;
@@ -581,8 +584,8 @@ namespace INFOIBV
             progressBar.Maximum = InputImage.Size.Width * InputImage.Size.Height;
             progressBar.Value = 1;
             progressBar.Step = 1;
-            
-            
+
+
             //Apply threshold
             for (int x = 0; x < inputImage.GetLength(0); x++) // loop over columns
                 for (int y = 0; y < inputImage.GetLength(1); y++) // loop over rows
@@ -600,7 +603,7 @@ namespace INFOIBV
         #region Assignment2
         //All functions for assignment 2 (This comment is added later)
 
-         private byte[,] erodeImage(byte[,] inputImage, List<ElementPoint> strElement)
+        private byte[,] erodeImage(byte[,] inputImage, List<ElementPoint> strElement)
         {
             byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
             for (int x = 0; x < inputImage.GetLength(0); x++)
@@ -610,7 +613,7 @@ namespace INFOIBV
                     int lowest = 255;
                     foreach (ElementPoint i in strElement)
                     {
-                        if(    x + i.x >= 0 && x + i.x < inputImage.GetLength(0) 
+                        if (x + i.x >= 0 && x + i.x < inputImage.GetLength(0)
                             && y + i.y >= 0 && y + i.y < inputImage.GetLength(1))
                         {
                             if (inputImage[x + i.x, y + i.y] - i.value < lowest)
@@ -620,7 +623,7 @@ namespace INFOIBV
                         }
                     }
                     if (lowest <= 0) tempImage[x, y] = 0;
-                    else tempImage[x, y] = (byte) lowest;
+                    else tempImage[x, y] = (byte)lowest;
                 }
             }
             return tempImage;
@@ -636,7 +639,7 @@ namespace INFOIBV
                     int highest = 0;
                     foreach (ElementPoint i in strElement)
                     {
-                        if (    x + i.x >= 0 && x + i.x < inputImage.GetLength(0)
+                        if (x + i.x >= 0 && x + i.x < inputImage.GetLength(0)
                              && y + i.y >= 0 && y + i.y < inputImage.GetLength(1))
                         {
                             if (inputImage[x + i.x, y + i.y] + i.value > highest)
@@ -664,14 +667,14 @@ namespace INFOIBV
             tempImage = erodeImage(tempImage, strElement);
             return tempImage;
         }
-        
+
         struct ElementPoint
         {
             public int x, y;
             public byte value;
         }
-        
-        private List<ElementPoint> createStructuringElement(char shape, byte size) 
+
+        private List<ElementPoint> createStructuringElement(char shape, byte size)
         {
             if (size % 2 != 1) throw new Exception("size can't be even");
             if (size <= 2) throw new Exception("size needs to be at least 3");
@@ -686,10 +689,10 @@ namespace INFOIBV
                     }
                     for (int y = -(size / 2); y < size / 2 + 1; y++)
                     {
-                        if(y != 0) element.Add(new ElementPoint { x = 0, y = y, value = 1 });
+                        if (y != 0) element.Add(new ElementPoint { x = 0, y = y, value = 1 });
                     }
                     break;
-                case 'c':  
+                case 'c':
                     for (int x = -(size / 2); x < size / 2 + 1; x++)
                     {
                         for (int y = -(size / 2); y < size / 2 + 1; y++)
@@ -702,9 +705,9 @@ namespace INFOIBV
                     }
                     break;
                 case 's':
-                    for (int x =  - (size / 2); x < size / 2 + 1; x++)
+                    for (int x = -(size / 2); x < size / 2 + 1; x++)
                     {
-                        for (int y = - (size / 2); y < size / 2 + 1; y++)
+                        for (int y = -(size / 2); y < size / 2 + 1; y++)
                         {
                             element.Add(new ElementPoint { x = x, y = y, value = 1 });
                         }
@@ -717,14 +720,14 @@ namespace INFOIBV
         }
         private byte[,] andImages(byte[,] I1, byte[,] I2)
         {
-            if(I1.GetLength(0) != I2.GetLength(0))
+            if (I1.GetLength(0) != I2.GetLength(0))
                 throw new Exception("The size of the input images does not match in the AND operation");
-            if(I1.GetLength(1) != I2.GetLength(1))
+            if (I1.GetLength(1) != I2.GetLength(1))
                 throw new Exception("The size of the input images does not match in the AND operation");
-            
+
             byte[,] result = new byte[I1.GetLength(0), I1.GetLength(1)];
-            
-            for(int x = 0; x < I1.GetLength(0); x++)
+
+            for (int x = 0; x < I1.GetLength(0); x++)
                 for (int y = 0; y < I1.GetLength(1); y++)
                 {
                     if (I1[x, y] == 0 && I2[x, y] == 0)
@@ -735,17 +738,17 @@ namespace INFOIBV
 
             return result;
         }
-        
+
         private byte[,] orImages(byte[,] I1, byte[,] I2)
         {
-            if(I1.GetLength(0) != I2.GetLength(0))
+            if (I1.GetLength(0) != I2.GetLength(0))
                 throw new Exception("The size of the input images does not match in the OR operation");
-            if(I1.GetLength(1) != I2.GetLength(1))
+            if (I1.GetLength(1) != I2.GetLength(1))
                 throw new Exception("The size of the input images does not match in the OR operation");
-            
+
             byte[,] result = new byte[I1.GetLength(0), I1.GetLength(1)];
-            
-            for(int x = 0; x < I1.GetLength(0); x++)
+
+            for (int x = 0; x < I1.GetLength(0); x++)
                 for (int y = 0; y < I1.GetLength(1); y++)
                 {
                     if (I1[x, y] == 0 || I2[x, y] == 0)
@@ -770,7 +773,7 @@ namespace INFOIBV
             h.intensityValues = intensitieCount;
 
             int uniqueValues = 0;
-            
+
             for (int i = 0; i < 256; i++)
             {
                 if (intensitieCount[i] != 0)
@@ -784,9 +787,9 @@ namespace INFOIBV
         private List<Point> traceBoundary(byte[,] binaryImage)
         {
             Point startingPoint = findStartingPoint(binaryImage);
-            
+
             int dir;
-            
+
             if (startingPoint.X == 0)
                 dir = 6;
             else
@@ -804,30 +807,30 @@ namespace INFOIBV
             yS = startingPoint.Y; //Declare the starting point
             contour.Add(pt);
 
-            int[] p = new[] {pt.X, pt.Y};
-            
+            int[] p = new[] { pt.X, pt.Y };
+
             dir = findNextPoint(dir, p, binaryImage); //Get the next point after the starting point
 
             xP = xS; //Previous contour point is the starting point
             yP = yS; //Previous contour point is the starting point
 
             xT = p[0]; //Declare the successor of the starting point
-            yT = p[1]; 
-            
+            yT = p[1];
+
             xC = p[0]; //Declare the current point
             yC = p[1];
 
             bool done = xS == xT && yS == yT;
 
-            if(!done)
+            if (!done)
                 contour.Add(new Point(xC, yC));
-            
+
             while (!done)
             {
-                if(contour.Count == 40)
+                if (contour.Count == 40)
                     Console.WriteLine("Hello");
-                
-                p = new int[]{xC, yC};
+
+                p = new int[] { xC, yC };
                 int nDir = (dir + 6) % 8;
                 dir = findNextPoint(nDir, p, binaryImage);
 
@@ -851,7 +854,7 @@ namespace INFOIBV
             for (int x = 0; x < binaryImage.GetLength(0); x++) // loop over columns
                 for (int y = 0; y < binaryImage.GetLength(1); y++) // loop over rows
                 {
-                    if(binaryImage[x, y] == 0)
+                    if (binaryImage[x, y] == 0)
                         return new Point(x, y);
                 }
             throw new Exception("No boundry");
@@ -859,12 +862,12 @@ namespace INFOIBV
 
         private int findNextPoint(int dir, int[] pt, byte[,] inputImage)
         {
-            int[,] dirs = {{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}};
+            int[,] dirs = { { 1, 0 }, { 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 }, { -1, -1 }, { 0, -1 }, { 1, -1 } };
             for (int i = 0; i < 7; i++)
             {
-                int x = pt[0] + dirs[dir,0];
-                int y = pt[1] + dirs[dir,1];
-                
+                int x = pt[0] + dirs[dir, 0];
+                int y = pt[1] + dirs[dir, 1];
+
                 //Checking if we sampel out of bounds
                 if (x < 0 || x >= inputImage.GetLength(0))
                     continue;
@@ -886,8 +889,8 @@ namespace INFOIBV
             return dir;
         }
         #endregion
-        
-        // Assignment 3
+
+        #region Assignment 3
 
         public float[,] houghTransformation(byte[,] binairyImage)
         {
@@ -899,11 +902,11 @@ namespace INFOIBV
             int hy = ly / 2;
 
             double maxRadius = Math.Sqrt(Math.Pow(hx, 2) + Math.Pow(hy, 2));
-            double translation = (double) (2 * maxRadius) / ly; //To translate the image
-            
+            double translation = (double)(2 * maxRadius) / ly; //To translate the image
+
             float[,] rThetaImage = new float[180, ly]; // From 100 to -100
 
-            for(int x = 0; x < lx; x++)
+            for (int x = 0; x < lx; x++)
             {
                 int translatedX = x - hx;
                 for (int y = 0; y < ly; y++)
@@ -915,9 +918,9 @@ namespace INFOIBV
                                    translatedY * Math.Sin(theta * Math.PI / 180);
                         r /= translation;
 
-                        rThetaImage[theta, hy + (int) Math.Floor(r)] += ((float) binairyImage[x, y]) / 255;
+                        rThetaImage[theta, hy + (int)Math.Floor(r)] += ((float)binairyImage[x, y]) / 255;
                     }
-                }    
+                }
             }
 
             return rThetaImage;
@@ -937,7 +940,7 @@ namespace INFOIBV
             double translation = (double)(2 * maxRadius) / ly; //To translate the image
 
             float[,] rThetaImage = new float[180, ly]; // From 100 to -100
-            
+
             for (int x = 0; x < lx; x++)
             {
                 int translatedX = x - hx;
@@ -965,17 +968,17 @@ namespace INFOIBV
         {
             float[,] temporary = new float[rThetaImage.GetLength(0), rThetaImage.GetLength(1)];
             int max = 0;
-            
+
             for (int x = 0; x < rThetaImage.GetLength(0); x++)
             {
                 for (int y = 0; y < rThetaImage.GetLength(1); y++)
                 {
                     temporary[x, y] = rThetaImage[x, y];
-                    
+
                     max = Math.Max(max, (int)rThetaImage[x, y]);
-                    
+
                     float localValue = rThetaImage[x, y];
-                    
+
                     for (int dx = -1; dx < 2; dx++)
                     {
                         if (x + dx < 0)
@@ -994,14 +997,14 @@ namespace INFOIBV
                     }
                 }
             }
-            
+
             List<Point> peaks = new List<Point>();
 
             for (int x = 0; x < rThetaImage.GetLength(0); x++)
             {
                 for (int y = 0; y < rThetaImage.GetLength(1); y++)
                 {
-                    if(temporary[x,y] >  (max * 0.5))
+                    if (temporary[x, y] > (max * 0.5))
                         peaks.Add(new Point(y, x)); // y = r (distance to the middle of the image) and x is theta / 2
                 }
             }
@@ -1013,7 +1016,7 @@ namespace INFOIBV
             int MaximumGap)
         {
             inputImage = thresholdImage(inputImage, minimumIntensityThreshold);
-            
+
             int lx = inputImage.GetLength(0);
             int ly = inputImage.GetLength(1);
 
@@ -1022,52 +1025,52 @@ namespace INFOIBV
             int hy = ly / 2;
 
             double maxRadius = Math.Sqrt(Math.Pow(hx, 2) + Math.Pow(hy, 2));
-            double translation = (double) (maxRadius) / hy; //To translate the image
+            double translation = (double)(maxRadius) / hy; //To translate the image
 
             double r = (rThetaPair.X - hy) * translation;
             int theta = rThetaPair.Y;
 
-            int x = inputImage.GetLength(0) / 2 + (int)(r * Math.Cos(((double) theta * Math.PI) / (180)));
-            int y = inputImage.GetLength(1) / 2 + (int)(r * Math.Sin(((double) theta) * Math.PI / (180)));
-            
-            double dx = Math.Cos(((double) (theta + 90) * Math.PI) / (180 ));
-            double dy = Math.Sin(((double) (theta + 90) * Math.PI) / (180));
+            int x = inputImage.GetLength(0) / 2 + (int)(r * Math.Cos(((double)theta * Math.PI) / (180)));
+            int y = inputImage.GetLength(1) / 2 + (int)(r * Math.Sin(((double)theta) * Math.PI / (180)));
+
+            double dx = Math.Cos(((double)(theta + 90) * Math.PI) / (180));
+            double dy = Math.Sin(((double)(theta + 90) * Math.PI) / (180));
 
             int nx = x;
             int ny = y;
 
             int d = 1;
-            
+
             //Getting the line
-            
+
             List<Point> Line = new List<Point>();
             //Getting the line
-            while (nx >= 0 && nx < inputImage.GetLength(0) && ny >= 0 && ny < inputImage.GetLength(1)) 
+            while (nx >= 0 && nx < inputImage.GetLength(0) && ny >= 0 && ny < inputImage.GetLength(1))
             {
                 Line.Add(new Point(nx, ny));
                 d += 1;
                 nx = (int)(x + dx * d);
-                ny = (int) (y + dy * d);
+                ny = (int)(y + dy * d);
             }
 
             Line.Reverse();
             Line.Add(new Point(x, y));
-            
+
             d = -1;
             nx = (int)(x + dx * d);
-            ny = (int) (y + dy * d);
-            while (nx >= 0 && nx < inputImage.GetLength(0) && ny >= 0 && ny < inputImage.GetLength(1)) 
+            ny = (int)(y + dy * d);
+            while (nx >= 0 && nx < inputImage.GetLength(0) && ny >= 0 && ny < inputImage.GetLength(1))
             {
                 Line.Add(new Point(nx, ny));
                 d -= 1;
                 nx = (int)(x + dx * d);
-                ny = (int) (y + dy * d);
+                ny = (int)(y + dy * d);
             }
-            
+
             int segmentCount = 0;
             int gapCount = 0;
             Point segmentStart = new Point(-1, -1);
-            
+
             List<Point> lineSegments = new List<Point>();
             for (int i = 0; i < Line.Count; i++)
             {
@@ -1124,15 +1127,15 @@ namespace INFOIBV
             {
                 for (int y = 0; y < workingImage.GetLength(1); y++)
                 {
-                    workingImage[x, y] = (byte)(workingImage[x,y] * transparency);
+                    workingImage[x, y] = (byte)(workingImage[x, y] * transparency);
                 }
             }
 
-            for (int i = 0; i < lines.Count; i+=2)
+            for (int i = 0; i < lines.Count; i += 2)
             {
                 Point start;
                 Point end;
-                
+
                 if (lines[i].X == lines[i + 1].X) //vertical lines
                 {
                     int high = Math.Max(lines[i].Y, lines[i + 1].Y);
@@ -1169,6 +1172,90 @@ namespace INFOIBV
             }
             return workingImage;
         }
+        #endregion
+
+        private byte[,] drawPoints(byte[,] inputImage, List<Point> points, int size, byte color)
+        {
+            foreach (Point p in points)
+            {
+                for (int x = -(size / 2); x < size / 2 + 1; x++)
+                {
+                    for (int y = -(size / 2); y < size / 2 + 1; y++)
+                    {
+                        if (x * x + y * y <= (size / 2) * (size / 2))
+                        {
+                            if (x + p.X >= 0 && x + p.X < inputImage.GetLength(0) && y + p.Y >= 0 && y + p.Y < inputImage.GetLength(1))
+                            {
+                                inputImage[x + p.X, y + p.Y] = color;
+                            }
+                        }
+                    }
+                }
+            }
+            return inputImage;
+        }
+
+        private List<Point> harrisCorner(byte[,] inputImage, byte radius, int threshold, double[,] filter)
+        {
+            List<Point> points = new List<Point>();
+            double[,] A = new double[inputImage.GetLength(0), inputImage.GetLength(1)];
+            double[,] B = new double[inputImage.GetLength(0), inputImage.GetLength(1)];
+            double[,] C = new double[inputImage.GetLength(0), inputImage.GetLength(1)];
+            double[,] pointMap = new double[inputImage.GetLength(0), inputImage.GetLength(1)];
+
+            for (int x = 1; x < inputImage.GetLength(0) - 1; x++)
+            {
+                for (int y = 1; y < inputImage.GetLength(1) - 1; y++)
+                {
+                    double sobelx = 0.125f * (-inputImage[x - 1, y - 1] - 2 * inputImage[x - 1, y] - inputImage[x - 1, y + 1] + inputImage[x + 1, y - 1] + 2 * inputImage[x + 1, y] + inputImage[x + 1, y + 1]);
+                    double sobely = 0.125f * (-inputImage[x - 1, y - 1] - 2 * inputImage[x, y - 1] - inputImage[x + 1, y - 1] + inputImage[x - 1, y + 1] + 2 * inputImage[x, y + 1] + inputImage[x + 1, y + 1]);
+
+                    A[x, y] = sobelx * sobelx;
+                    B[x, y] = sobely * sobely;
+                    C[x, y] = sobelx * sobely;
+                }
+            }
+            A = convolveImageDouble(A, filter);
+            B = convolveImageDouble(B, filter);
+            C = convolveImageDouble(C, filter);
+
+            for (int x = 0; x < inputImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    double val = (A[x, y] * B[x, y] - C[x, y] * C[x, y]) - 0.04f * (A[x, y] + B[x, y]) * (A[x, y] + B[x, y]);
+                    if (val > threshold) pointMap[x, y] = val;
+                }
+            }
+            for (int x = 0; x < inputImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    double curval = pointMap[x, y];
+                    if (curval != 0)
+                    {
+                        for (int dx = -radius; dx < radius; dx++)
+                        {
+                            for (int dy = -radius; dy < radius; dy++)
+                            {
+                                if (dx * dx + dy * dy < radius * radius && x + dx >= 0 && x + dx < inputImage.GetLength(0) && y + dy >= 0 && y + dy < inputImage.GetLength(1))
+                                {
+                                    if (pointMap[x + dx, y + dy] > curval)
+                                    {
+                                        curval = 0;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (curval != 0) points.Add(new Point(x, y));
+                    }
+                }
+            }
+
+
+            return points;
+        }
         private byte[,] pipeLine(byte[,] inputImage)
         {
             byte[,] equalizedImage = equalizeImage(inputImage);
@@ -1181,7 +1268,7 @@ namespace INFOIBV
         {
             byte[,] copy = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
             sbyte[,] sharpener = contrastSharpener();
-            
+
             for (int x = 0; x < InputImage.Size.Width; x++) // loop over columns
             {
                 for (int y = 0; y < InputImage.Size.Height; y++) // loop over rows
@@ -1215,13 +1302,127 @@ namespace INFOIBV
             }
             return copy;
         }
+
+        private double[,] createGaussianFilterDouble(byte size, double sigma)
+        {
+            if (size % 2 != 1) throw new Exception("size can't be even");
+
+            double[,] filter = new double[size, size];
+            double sigmasq = sigma * sigma;
+            double sumtot = 0;           //Used for normalisation
+
+            for (int x = 0; x < size; x++)
+            {
+                for (int y = 0; y < size; y++)
+                {
+                    double tmp = (double)(Math.E / (2 * Math.PI * sigmasq)) - (x ^ 2 + y ^ 2) / (2 * sigmasq);
+                    sumtot += tmp;
+                    filter[x, y] = tmp;
+                }
+            }
+            sumtot = 1.0f / sumtot; //inverse of total for normalisation
+
+            for (int x = 0; x < size; x++)
+            {
+                for (int y = 0; y < size; y++)
+                {
+                    filter[x, y] *= sumtot;
+                }
+            }
+            return filter;
+        }
+
+        private Double[,] convolveImageDouble(Double[,] inputImage, double[,] filter)
+        {
+            int[] offset = { filter.GetLength(0) / 2, filter.GetLength(1) / 2 };        //contains the offset used for the borders.
+            Double[,] tempImage = new Double[inputImage.GetLength(0) + 2 * offset[0], inputImage.GetLength(1) + 2 * offset[1]];
+            Double[,] finalImage = new Double[inputImage.GetLength(0), inputImage.GetLength(1)];
+
+            Double avg = 0;
+            for (int x = 0; x < inputImage.GetLength(0); x++)       //gets the average pixel value 
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    avg += inputImage[x, y];
+                }
+            }
+
+            avg = avg / (inputImage.GetLength(0) * inputImage.GetLength(1));
+            for (int x = 0; x < tempImage.GetLength(0); x++)       //fill temp image with average to fill corners.
+            {
+                for (int y = 0; y < tempImage.GetLength(1); y++)
+                {
+                    tempImage[x, y] = (byte)avg;
+                }
+            }
+
+            //for (int x = 0; x < inputImage.GetLength(0); x++)       //stretch top
+            //{
+            //    for (int y = 0; y < offset[1]; y++)
+            //    {
+            //        tempImage[x + offset[0], y] = inputImage[x, 0];
+            //    }
+            //}
+
+            //for (int x = 0; x < offset[0]; x++)                     //stretch left
+            //{
+            //    for (int y = 0; y < inputImage.GetLength(1); y++)
+            //    {
+            //        tempImage[x, y] = inputImage[0, y];
+            //    }
+            //}
+
+            //for (int x = 0; x < inputImage.GetLength(0); x++)       //stretch bottom
+            //{
+            //    for (int y = 0; y < offset[1]; y++)
+            //    {
+            //        tempImage[x + offset[0], y + inputImage.GetLength(1) + offset[1]] = inputImage[x, inputImage.GetLength(1) - 1];
+            //    }
+            //}
+
+            //for (int x = 0; x < offset[0]; x++)
+            //{
+            //    for (int y = 0; y < inputImage.GetLength(1); y++)   //stretch right
+            //    {
+            //        tempImage[x + inputImage.GetLength(0) + offset[1], y + offset[0]] = inputImage[inputImage.GetLength(1) - 1, y];
+            //    }
+            //}
+
+            for (int x = 0; x < inputImage.GetLength(0); x++) //insert image in middle
+            {
+                for (int y = 0; y < inputImage.GetLength(1); y++)
+                {
+                    tempImage[x + offset[0], y + offset[1]] = inputImage[x, y];
+                }
+            }
+
+            //loops over every pixel, and for each pixel applies the filter with another loop. The value of each multiplication is summed and creates a final image.
+            for (int x = 0; x < finalImage.GetLength(0); x++)
+            {
+                for (int y = 0; y < finalImage.GetLength(1); y++)
+                {
+                    Double val = 0;
+                    for (int xf = 0; xf < filter.GetLength(0); xf++)
+                    {
+                        for (int yf = 0; yf < filter.GetLength(1); yf++)
+                        {
+                            val += filter[xf, yf] * tempImage[x + xf, y + yf];
+                        }
+                    }
+
+                    finalImage[x, y] = (byte)val;
+                }
+            }
+
+            return finalImage;
+        }
     }
-    
-    
+
+
     struct Histogram
     {
         public int[] intensityValues;
         public int uniqueValues;
     }
-    
+
 }
