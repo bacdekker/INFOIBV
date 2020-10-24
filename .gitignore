@@ -243,3 +243,6 @@ project.lock.json
 #####
 # End of core ignore list, below put you custom 'per project' settings (patterns or path)
 #####
+*.cache
+INFOIBV/obj/x86/Debug/INFOIBV.csproj.GenerateResource.cache
+INFOIBV/obj/x86/Debug/INFOIBV.csprojAssemblyReference.cache

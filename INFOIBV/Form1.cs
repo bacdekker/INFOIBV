@@ -64,16 +64,23 @@ namespace INFOIBV
 
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
             //workingImage = pipeLine(workingImage);
-            //workingImage = pipeLine(workingImage);
+            workingImage = adjustContrast(workingImage);
+            workingImage = openImage(workingImage, createStructuringElement('c', 5));
+            //workingImage = convolveImage(workingImage, createGaussianFilter(3, 1f));
+
             byte[,] copyToDisplay = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
-            //workingImage = pipeLine(workingImage);
-            List<Point> corners = harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5));
+            workingImage = pipeLine(workingImage);
+
+            List<Point> corners = harrisCorner(workingImage, 15, 6750, createGaussianFilterDouble(15, 5));
+            workingImage = thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30);
             drawPoints(workingImage, corners, 9, 255);
-            List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30), workingImage);
-            List<Point> points = figurenToLineSegments(figuren);
-            workingImage = copyToDisplay;
-            workingImage = imposeLines(workingImage, points, 255, 0.1f);
-            workingImage = drawPoints(workingImage, corners, 9, 255);
+
+            //List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30), workingImage);
+            //List<Point> points = figurenToLineSegments(figuren);
+            //workingImage = copyToDisplay;
+            //workingImage = imposeLines(workingImage, points, 255, 1);
+            //workingImage = drawPoints(workingImage, corners, 9, 255);
+
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = thresholdImage(workingImage, 128);
@@ -1208,13 +1215,25 @@ namespace INFOIBV
             double[,] C = new double[inputImage.GetLength(0), inputImage.GetLength(1)];
             double[,] pointMap = new double[inputImage.GetLength(0), inputImage.GetLength(1)];
 
-            for (int x = 1; x < inputImage.GetLength(0) - 1; x++)
+            for (int x = 2; x < inputImage.GetLength(0) - 2; x++)
             {
-                for (int y = 1; y < inputImage.GetLength(1) - 1; y++)
+                for (int y = 2; y < inputImage.GetLength(1) - 2; y++)
                 {
-                    double sobelx = 0.125f * (-inputImage[x - 1, y - 1] - 2 * inputImage[x - 1, y] - inputImage[x - 1, y + 1] + inputImage[x + 1, y - 1] + 2 * inputImage[x + 1, y] + inputImage[x + 1, y + 1]);
-                    double sobely = 0.125f * (-inputImage[x - 1, y - 1] - 2 * inputImage[x, y - 1] - inputImage[x + 1, y - 1] + inputImage[x - 1, y + 1] + 2 * inputImage[x, y + 1] + inputImage[x + 1, y + 1]);
+                    //double sobelx = 0.125f * (-inputImage[x - 1, y - 1] - 2 * inputImage[x - 1, y] - inputImage[x - 1, y + 1] + inputImage[x + 1, y - 1] + 2 * inputImage[x + 1, y] + inputImage[x + 1, y + 1]);
+                    //double sobely = 0.125f * (-inputImage[x - 1, y - 1] - 2 * inputImage[x, y - 1] - inputImage[x + 1, y - 1] + inputImage[x - 1, y + 1] + 2 * inputImage[x, y + 1] + inputImage[x + 1, y + 1]);
+                    double sobelx = 1 * inputImage[x - 2, y - 2] +  2 * inputImage[x - 1, y - 2] - ( 2 * inputImage[x + 1, y - 2] + 1 * inputImage[x + 2, y - 2]) +
+                                    4 * inputImage[x - 2, y - 1] +  8 * inputImage[x - 1, y - 1] - ( 8 * inputImage[x + 1, y - 1] + 4 * inputImage[x + 2, y - 1]) +
+                                    6 * inputImage[x - 2, y    ] + 12 * inputImage[x - 1, y    ] - (12 * inputImage[x + 1, y    ] + 6 * inputImage[x + 2, y    ]) +
+                                    4 * inputImage[x - 2, y + 1] +  8 * inputImage[x - 1, y + 1] - ( 8 * inputImage[x + 1, y + 1] + 4 * inputImage[x + 2, y + 1]) +
+                                    1 * inputImage[x - 2, y + 2] +  2 * inputImage[x - 1, y + 2] - ( 2 * inputImage[x + 1, y + 2] + 1 * inputImage[x + 2, y + 2]);
 
+                    double sobely = -(1 * inputImage[x - 2, y - 2] + 4 * inputImage[x - 1, y - 2] +  6 * inputImage[x, y - 2] + 4 * inputImage[x + 1, y - 2] + 1 * inputImage[x + 2, y - 2]) +
+                                    -(2 * inputImage[x - 2, y - 1] + 8 * inputImage[x - 1, y - 1] + 12 * inputImage[x, y - 1] + 8 * inputImage[x + 1, y - 1] + 2 * inputImage[x + 2, y - 1]) +
+                                      2 * inputImage[x - 2, y + 1] + 8 * inputImage[x - 1, y + 1] + 12 * inputImage[x, y + 1] + 8 * inputImage[x + 1, y + 1] + 2 * inputImage[x + 2, y + 1] +
+                                      1 * inputImage[x - 2, y + 2] + 4 * inputImage[x - 1, y + 2] +  6 * inputImage[x, y + 2] + 4 * inputImage[x + 1, y + 2] + 1 * inputImage[x + 2, y + 2];
+
+                    sobelx *= 0.01041666666f;
+                    sobely *= 0.01041666666f;
                     A[x, y] = sobelx * sobelx;
                     B[x, y] = sobely * sobely;
                     C[x, y] = sobelx * sobely;
@@ -1263,11 +1282,8 @@ namespace INFOIBV
         }
         private byte[,] pipeLine(byte[,] inputImage)
         {
-            byte[,] equalizedImage = equalizeImage(inputImage);
-            byte[,] blurredImage = convolveImage(equalizedImage, createGaussianFilter(3, 1f));
-            byte[,] pipeLinedImage = sharpenEdges(blurredImage);
-            byte[,] medianImage = medianFilter(pipeLinedImage, 3);
-            return medianImage;
+
+            return inputImage;
         }
 
         private byte[,] sharpenEdges(byte[,] inputImage)
@@ -1518,7 +1534,33 @@ namespace INFOIBV
 
             return punten;
         }
-        
+
+        private byte[,] convertToGrayscaleMax(Color[,] inputImage)
+        {
+            // create temporary grayscale image of the same size as input, with a single channel
+            byte[,] tempImage = new byte[inputImage.GetLength(0), inputImage.GetLength(1)];
+
+            // setup progress bar
+            progressBar.Visible = true;
+            progressBar.Minimum = 1;
+            progressBar.Maximum = InputImage.Size.Width * InputImage.Size.Height;
+            progressBar.Value = 1;
+            progressBar.Step = 1;
+
+            // process all pixels in the image
+            for (int x = 0; x < InputImage.Size.Width; x++)                 // loop over columns
+                for (int y = 0; y < InputImage.Size.Height; y++)            // loop over rows
+                {
+                    Color pixelColor = inputImage[x, y];                    // get pixel color
+                    byte average = (byte)(Math.Min((byte)255,(Math.Max(Math.Max(pixelColor.R, pixelColor.B), pixelColor.G)))); // calculate average over the three channels
+                    tempImage[x, y] = average;                              // set the new pixel color at coordinate (x,y)
+                    progressBar.PerformStep();                              // increment progress bar
+                }
+
+            progressBar.Visible = false;                                    // hide progress bar
+
+            return tempImage;
+        }
     }
 
 
