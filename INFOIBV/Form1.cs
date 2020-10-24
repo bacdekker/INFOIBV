@@ -72,15 +72,15 @@ namespace INFOIBV
             workingImage = pipeLine(workingImage);
 
             List<Point> corners = harrisCorner(workingImage, 15, 6750, createGaussianFilterDouble(15, 5));
-            workingImage = thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30);
+            //workingImage = thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30);
             drawPoints(workingImage, corners, 9, 255);
-
-            //List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30), workingImage);
-            //List<Point> points = figurenToLineSegments(figuren);
-            //workingImage = copyToDisplay;
-            //workingImage = imposeLines(workingImage, points, 255, 1);
-            //workingImage = drawPoints(workingImage, corners, 9, 255);
-
+            List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
+            List<Point> points = puntenToLineSegments(corners,
+                thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
+            List<Point> pts = figurenToLineSegments(figuren);
+            workingImage = copyToDisplay;
+            workingImage = imposeLines(workingImage, pts, 255, 0.1f);
+            workingImage = drawPoints(workingImage, corners, 9, 255);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = thresholdImage(workingImage, 128);
@@ -1439,6 +1439,33 @@ namespace INFOIBV
             return finalImage;
         }
 
+        public List<Point> puntenToLineSegments(List<Point> pts, byte[,] edgeStrength, byte[,] inputImage)
+        {
+            List<Punt> punten = Punt.convert(pts);
+            
+            for (int i = 0; i < punten.Count; i++)
+            {
+                for (int j = i + 1; j < punten.Count; j++)
+                {
+                    punten[i].isConnectedWith(edgeStrength, inputImage, punten[j]);
+                }
+            }
+            
+            List<Point> segmenten = new List<Point>();
+            foreach (Punt p in punten)
+            {
+                Point p1 = new Point(p.px, p.py);
+                foreach (Punt q in p.connectedPoints)
+                {
+                    Point p2 = new Point(q.px, q.py);
+                    segmenten.Add(p1);
+                    segmenten.Add(p2);
+                }
+            }
+
+            return segmenten;
+        }
+
         public List<Figuur> objectDetection(List<Punt> gedetecteerdePunten, byte[,] edgeStrength, byte[,] inputImage)
         {
             //Checks which points are connected with each other
@@ -1674,7 +1701,7 @@ namespace INFOIBV
             }
 
             //We have an error margin of 20% due to the discrete nature of pixels 
-            if (0.3 * samples < amountOfWrongSamples || 0.3 * samples < amountOfPixelsNotOnEdges)
+            if (0.1 * samples < amountOfWrongSamples || 0.1 * samples < amountOfPixelsNotOnEdges)
                 return false;
             
             connectedPoints.Add(p);
