@@ -67,11 +67,11 @@ namespace INFOIBV
             //workingImage = pipeLine(workingImage);
             List<Point> corners = harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5));
             drawPoints(workingImage, corners, 9, 255);
-            List<Figuur> figuren = objectDetection(Punt.convert(corners), edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), workingImage);
+            List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 50), workingImage);
             //workingImage = drawPoints(workingImage, harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5)) , 9, 255);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
-
+            workingImage = thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 50);
             //workingImage = thresholdImage(workingImage, 128);
             //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
             //workingImage = equalizeImage(workingImage);
@@ -1536,6 +1536,48 @@ namespace INFOIBV
 
             return punten;
         }
+
+        public static int maxValue(byte[,] inputImage, int x, int y, int size)
+        {
+            int max = 0;
+            for (int i = -1 * ((size - 1) / 2); i < ((size + 1) / 2); i++)
+            {
+                for (int j = -1 * ((size - 1) / 2); j < ((size + 1) / 2); j++)
+                {
+                    try
+                    {
+                        max = Math.Max(inputImage[x + i, y + j], max);
+                    }
+                    catch
+                    {
+                        
+                    }
+                }
+            }
+
+            return max;
+        }
+
+        public static int closestValue(byte[,] inputImage, int x, int y, int size, int difference)
+        {
+            int distance = 255;
+            for (int i = -1 * ((size - 1) / 2); i < ((size + 1) / 2); i++)
+            {
+                for (int j = -1 * ((size - 1) / 2); j < ((size + 1) / 2); j++)
+                {
+                    try
+                    {
+                        distance = Math.Min(inputImage[x + i, y + j] - difference, distance);
+                    }
+                    catch
+                    {
+                        
+                    }
+                }
+            }
+
+            return distance;
+        }
         
         public bool isConnectedWith(byte[,] edgeStrength, byte[,] inputImage, Punt p)
         {
@@ -1564,15 +1606,15 @@ namespace INFOIBV
                 int y = (int)(((samples - i) * py + i * p.py)/((double)samples));
 
                 // So the pixel doesn't lie on an edge
-                if (edgeStrength[x, y] < 128)
+                if (maxValue(edgeStrength, x, y, 5) < 128)
                     amountOfPixelsNotOnEdges += 1;
 
-                if (Math.Abs(inputImage[px, py] - inputImage[x, y]) > 5)
+                if (closestValue(inputImage, x, y, 5, inputImage[px, py]) > 20 )
                     amountOfWrongSamples += 1;
             }
 
             //We have an error margin of 20% due to the discrete nature of pixels 
-            if (0.2 * samples > amountOfWrongSamples || 0.2 * samples > amountOfPixelsNotOnEdges)
+            if (0.1 * samples < amountOfWrongSamples || 0.1 * samples < amountOfPixelsNotOnEdges)
                 return false;
             
             connectedPoints.Add(p);
