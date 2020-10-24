@@ -65,12 +65,15 @@ namespace INFOIBV
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
             //workingImage = pipeLine(workingImage);
             //workingImage = pipeLine(workingImage);
+            byte[,] copyToDisplay = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
+            //workingImage = pipeLine(workingImage);
             List<Point> corners = harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5));
             drawPoints(workingImage, corners, 9, 255);
-            List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 50), workingImage);
+            List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30), workingImage);
             List<Point> points = figurenToLineSegments(figuren);
+            workingImage = copyToDisplay;
             workingImage = imposeLines(workingImage, points, 255, 0.1f);
-            workingImage = drawPoints(workingImage, harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5)) , 9, 255);
+            workingImage = drawPoints(workingImage, corners, 9, 255);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = thresholdImage(workingImage, 128);
@@ -1263,7 +1266,8 @@ namespace INFOIBV
             byte[,] equalizedImage = equalizeImage(inputImage);
             byte[,] blurredImage = convolveImage(equalizedImage, createGaussianFilter(3, 1f));
             byte[,] pipeLinedImage = sharpenEdges(blurredImage);
-            return pipeLinedImage;
+            byte[,] medianImage = medianFilter(pipeLinedImage, 3);
+            return medianImage;
         }
 
         private byte[,] sharpenEdges(byte[,] inputImage)
@@ -1623,12 +1627,12 @@ namespace INFOIBV
                 if (maxValue(edgeStrength, x, y, 5) < 128)
                     amountOfPixelsNotOnEdges += 1;
 
-                if (closestValue(inputImage, x, y, 5, inputImage[px, py]) > 20 )
-                    amountOfWrongSamples += 1;
+               // if (closestValue(inputImage, x, y, 5, inputImage[px, py]) > 20 )
+               //     amountOfWrongSamples += 1;
             }
 
             //We have an error margin of 20% due to the discrete nature of pixels 
-            if (0.1 * samples < amountOfWrongSamples || 0.1 * samples < amountOfPixelsNotOnEdges)
+            if (0.3 * samples < amountOfWrongSamples || 0.3 * samples < amountOfPixelsNotOnEdges)
                 return false;
             
             connectedPoints.Add(p);
