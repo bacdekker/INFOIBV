@@ -63,10 +63,11 @@ namespace INFOIBV
 
 
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
-            workingImage = pipeLine(workingImage);
+            //workingImage = pipeLine(workingImage);
+            //workingImage = pipeLine(workingImage);
             List<Point> corners = harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5));
             drawPoints(workingImage, corners, 9, 255);
-
+            List<Figuur> figuren = objectDetection(Punt.convert(corners), edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), workingImage);
             //workingImage = drawPoints(workingImage, harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5)) , 9, 255);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
@@ -1416,6 +1417,90 @@ namespace INFOIBV
 
             return finalImage;
         }
+
+        public List<Figuur> objectDetection(List<Punt> gedetecteerdePunten, byte[,] edgeStrength, byte[,] inputImage)
+        {
+            //Checks which points are connected with each other
+            
+            for (int i = 0; i < gedetecteerdePunten.Count; i++)
+            {
+                for (int j = i + 1; j < gedetecteerdePunten.Count; j++)
+                {
+                    gedetecteerdePunten[i].isConnectedWith(edgeStrength, inputImage, gedetecteerdePunten[j]);
+                }
+            }
+
+            int trianglecount = 0;
+            List<Figuur> figuren = new List<Figuur>();
+            
+            
+            //Checks for triangles
+            foreach (Punt p in gedetecteerdePunten)
+            {
+                foreach (Punt neighbour in p.connectedPoints)
+                {
+                    foreach (Punt q in neighbour.connectedPoints)
+                    {
+                        //We found a triangle
+                        if(p.connectedPoints.Contains(q))
+                        {
+                            bool isUnique = Driehoek.isUnique(p, neighbour, q);
+                            if (isUnique)
+                            {
+                                string ID = "T" + trianglecount.ToString();
+                                p.objects.Add(ID);
+                                neighbour.objects.Add(ID);
+                                q.objects.Add(ID);
+                                trianglecount++;
+                                Point p1 = new Point(p.px, p.py);
+                                Point p2 = new Point(neighbour.px, neighbour.py);
+                                Point p3 = new Point(q.px, q.py);
+                                Driehoek triangle = new Driehoek(p1, p2, p3);
+                                figuren.Add(triangle);
+                            }
+                        }
+                    }
+                }
+            }
+
+            int squareCount = 0;
+            //Checks for squares
+            foreach (Punt p in gedetecteerdePunten)
+            {
+                foreach (Punt neighbour in p.connectedPoints)
+                {
+                    foreach (Punt neighbour2 in p.connectedPoints)
+                    {
+                        foreach (Punt neighbourOfNeighbour in neighbour.connectedPoints)
+                        {
+                            if (neighbourOfNeighbour != p && neighbourOfNeighbour.connectedPoints.Contains(neighbour2))
+                            {
+                                bool isUnique = Vierkant.isUnique(p, neighbour, neighbour2, neighbourOfNeighbour);
+                                if (isUnique)
+                                {
+                                    string ID = "S" + squareCount.ToString();
+                                    p.objects.Add(ID);
+                                    neighbour.objects.Add(ID);
+                                    neighbour2.objects.Add(ID);
+                                    neighbourOfNeighbour.objects.Add(ID);
+                                    squareCount++;
+                                    Point p1 = new Point(p.px, p.py);
+                                    Point p2 = new Point(neighbour.px, neighbour.py);
+                                    Point p3 = new Point(neighbour2.px, neighbour2.py);
+                                    Point p4 = new Point(neighbourOfNeighbour.px, neighbourOfNeighbour.py);
+                                    Vierkant square = new Vierkant(p1, p2, p3, p4);
+                                    figuren.Add(square);
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return figuren;
+        }
+        
     }
 
 
@@ -1425,4 +1510,149 @@ namespace INFOIBV
         public int uniqueValues;
     }
 
+    public class Punt
+    {
+        public List<Punt> connectedPoints;
+        public List<string> objects;
+        public int px;
+        public int py;
+
+        public Punt(int x, int y)
+        {
+            px = x;
+            py = y;
+        }
+
+        public static List<Punt> convert(List<Point> points)
+        {
+            List<Punt> punten = new List<Punt>();
+            foreach (Point p in points)
+            {
+                Punt punt = new Punt(p.X, p.Y);
+                punt.objects = new List<string>();
+                punt.connectedPoints = new List<Punt>();
+                punten.Add(punt);
+            }
+
+            return punten;
+        }
+        
+        public bool isConnectedWith(byte[,] edgeStrength, byte[,] inputImage, Punt p)
+        {
+            //If the points themselves have a very different amount greyness, then they are not on the same edge
+            if (Math.Abs(inputImage[px, py] - inputImage[p.px, p.py]) > 5)
+                return false;
+            
+            //Calculate the distance
+            int distance = (int) (Math.Sqrt(Math.Pow(p.px - px, 2) + Math.Pow(p.py - py, 2)));
+            
+            //A sampling parameter is chosen based on the distance.
+            //If the distance is bigger then we have to sample less points per unit of distance
+            //because the chance that we only encounter good points is then really small.
+
+            int samples = distance; //(int)Math.Ceiling(Math.Sqrt(distance));
+            
+            //Checking to see if the pixels that we sample are on the edge
+            int sampleGreyValue = inputImage[px, py];
+            int amountOfWrongSamples = 0;
+            int amountOfPixelsNotOnEdges = 0;
+            
+            for (int i = 1; i < samples; i++)
+            {
+                //Getting cords for the sample
+                int x = (int)(((samples - i) * px + i * p.px)/((double)samples));
+                int y = (int)(((samples - i) * py + i * p.py)/((double)samples));
+
+                // So the pixel doesn't lie on an edge
+                if (edgeStrength[x, y] < 128)
+                    amountOfPixelsNotOnEdges += 1;
+
+                if (Math.Abs(inputImage[px, py] - inputImage[x, y]) > 5)
+                    amountOfWrongSamples += 1;
+            }
+
+            //We have an error margin of 20% due to the discrete nature of pixels 
+            if (0.2 * samples > amountOfWrongSamples || 0.2 * samples > amountOfPixelsNotOnEdges)
+                return false;
+            
+            connectedPoints.Add(p);
+            p.connectedPoints.Add(this);
+            return true;
+        }
+    }
+
+    public class Figuur
+    {
+        public string ID;
+    }
+
+    public class Driehoek : Figuur
+    {
+        public Point P1;
+        public Point P2;
+        public Point P3;
+
+        public Driehoek(Point p1, Point p2, Point p3)
+        {
+            P1 = p1;
+            P2 = p2;
+            P3 = p3;
+        }
+
+        public static bool isUnique(Punt tp1, Punt tp2, Punt tp3)
+        {
+            foreach (string ID in tp1.objects)
+            {
+                if (tp2.objects.Contains(ID) && tp3.objects.Contains(ID))
+                    return false;
+            }
+
+            return true;
+        }
+    }
+
+    public class Vierkant : Figuur
+    {
+        public Point P1;
+        public Point P2;
+        public Point P3;
+        public Point P4;
+        
+        public Vierkant(Point p1, Point p2, Point p3, Point p4)
+        {
+            P1 = p1;
+            P2 = p2;
+            P3 = p3;
+            P4 = p4;
+        } 
+        
+        public static bool isUnique(Punt tp1, Punt tp2, Punt tp3, Punt tp4)
+        {
+            //Checking if the square is unique
+            foreach (string ID in tp1.objects)
+            {
+                if (tp2.objects.Contains(ID) && tp3.objects.Contains(ID) && tp4.objects.Contains(ID))
+                    return false;
+            }
+            
+            //Checking if a triangle can be made with tp1
+
+            foreach (string ID in tp1.objects)
+            {
+                if (tp2.objects.Contains(ID) && tp3.objects.Contains(ID) && ID.Contains("T")|| 
+                    tp2.objects.Contains(ID) && tp4.objects.Contains(ID) && ID.Contains("T") ||
+                    tp3.objects.Contains(ID) && tp4.objects.Contains(ID) && ID.Contains("T"))
+                    return false;
+            }
+            
+            //Checking if a triangle can be make with tp 2
+            foreach (string ID in tp2.objects)
+            {
+                if (tp3.objects.Contains(ID) && tp4.objects.Contains(ID) && ID.Contains("T"))
+                    return false;
+            }
+            return true;
+        }
+    }
+    
 }
