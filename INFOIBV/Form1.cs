@@ -70,18 +70,17 @@ namespace INFOIBV
 
             byte[,] copyToDisplay = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
             workingImage = pipeLine(workingImage);
-            workingImage = drawCenterBox(workingImage, new Point(200, 200), new Point(500, 220));
-            workingImage = drawBoundingBox(workingImage, new Point(50, 200), new Point(30, 220));
-            //List<Point> corners = harrisCorner(workingImage, 15, 6750, createGaussianFilterDouble(15, 5));
-            ////workingImage = thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30);
-            //drawPoints(workingImage, corners, 9, 255);
+            //workingImage = drawCenterBox(workingImage, new Point(200, 200), new Point(500, 220));
+            //workingImage = drawBoundingBox(workingImage, new Point(50, 200), new Point(30, 220));
+            List<Point> corners = harrisCorner(workingImage, 15, 6750, createGaussianFilterDouble(15, 5));
+            //workingImage = thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30);
+            drawPoints(workingImage, corners, 9, 255);
             //List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
-            //List<Point> points = puntenToLineSegments(corners,
-            //    thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
+            //List<Point> points = puntenToLineSegments(corners, thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
             //List<Point> pts = figurenToLineSegments(figuren);
-            //workingImage = copyToDisplay;
+            workingImage = copyToDisplay;
             //workingImage = imposeLines(workingImage, pts, 255, 0.1f);
-            //workingImage = drawPoints(workingImage, corners, 9, 255);
+            workingImage = drawPoints(workingImage, corners, 9, 255);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = thresholdImage(workingImage, 128);
@@ -1211,19 +1210,36 @@ namespace INFOIBV
 
         private byte[,] drawPoints(byte[,] inputImage, List<Point> points, int size, byte color)
         {
+            //foreach (Point p in points)
+            //{
+            //    for (int x = -(size / 2); x < size / 2 + 1; x++)
+            //    {
+            //        for (int y = -(size / 2); y < size / 2 + 1; y++)
+            //        {
+            //            if (x * x + y * y <= (size / 2) * (size / 2))
+            //            {
+            //                if (x + p.X >= 0 && x + p.X < inputImage.GetLength(0) && y + p.Y >= 0 && y + p.Y < inputImage.GetLength(1))
+            //                {
+            //                    inputImage[x + p.X, y + p.Y] = color;
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
             foreach (Point p in points)
             {
                 for (int x = -(size / 2); x < size / 2 + 1; x++)
                 {
-                    for (int y = -(size / 2); y < size / 2 + 1; y++)
+                    if (x + p.X >= 0 && x + p.X < inputImage.GetLength(0) && p.Y >= 0 && p.Y < inputImage.GetLength(1))
                     {
-                        if (x * x + y * y <= (size / 2) * (size / 2))
-                        {
-                            if (x + p.X >= 0 && x + p.X < inputImage.GetLength(0) && y + p.Y >= 0 && y + p.Y < inputImage.GetLength(1))
-                            {
-                                inputImage[x + p.X, y + p.Y] = color;
-                            }
-                        }
+                        inputImage[x + p.X, p.Y] = color;
+                    }
+                }
+                for (int y = -(size / 2); y < size / 2 + 1; y++)
+                {
+                    if (p.X >= 0 && p.X < inputImage.GetLength(0) && y + p.Y >= 0 && y + p.Y < inputImage.GetLength(1))
+                    {
+                        inputImage[p.X, y + p.Y] = color;
                     }
                 }
             }
@@ -1654,13 +1670,9 @@ namespace INFOIBV
             {
                 for (int j = -1 * ((size - 1) / 2); j < ((size + 1) / 2); j++)
                 {
-                    try
+                    if (x + i >= 0 && x + i < inputImage.GetLength(0) && y + j >= 0 && y + j < inputImage.GetLength(1))
                     {
                         max = Math.Max(inputImage[x + i, y + j], max);
-                    }
-                    catch
-                    {
-                        
                     }
                 }
             }
@@ -1675,13 +1687,9 @@ namespace INFOIBV
             {
                 for (int j = -1 * ((size - 1) / 2); j < ((size + 1) / 2); j++)
                 {
-                    try
+                    if (x + i >= 0 && x + i < inputImage.GetLength(0) && y + j >= 0 && y + j < inputImage.GetLength(1))
                     {
                         distance = Math.Min(inputImage[x + i, y + j] - difference, distance);
-                    }
-                    catch
-                    {
-                        
                     }
                 }
             }
