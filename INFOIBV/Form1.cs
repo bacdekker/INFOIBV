@@ -69,12 +69,12 @@ namespace INFOIBV
             //workingImage = pipeLine(workingImage);
             List<Point> corners = harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5));
             drawPoints(workingImage, corners, 9, 255);
-            List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30), workingImage);
+            List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
             List<Point> points = puntenToLineSegments(corners,
-                thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30), workingImage);
-            //List<Point> points = figurenToLineSegments(figuren);
+                thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
+            List<Point> pts = figurenToLineSegments(figuren);
             workingImage = copyToDisplay;
-            workingImage = imposeLines(workingImage, points, 255, 0.1f);
+            workingImage = imposeLines(workingImage, pts, 255, 0.1f);
             workingImage = drawPoints(workingImage, corners, 9, 255);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
@@ -1661,7 +1661,7 @@ namespace INFOIBV
             }
 
             //We have an error margin of 20% due to the discrete nature of pixels 
-            if (0.3 * samples < amountOfWrongSamples || 0.3 * samples < amountOfPixelsNotOnEdges)
+            if (0.1 * samples < amountOfWrongSamples || 0.1 * samples < amountOfPixelsNotOnEdges)
                 return false;
             
             connectedPoints.Add(p);
