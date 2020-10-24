@@ -68,10 +68,11 @@ namespace INFOIBV
             List<Point> corners = harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5));
             drawPoints(workingImage, corners, 9, 255);
             List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 50), workingImage);
-            //workingImage = drawPoints(workingImage, harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5)) , 9, 255);
+            List<Point> points = figurenToLineSegments(figuren);
+            workingImage = imposeLines(workingImage, points, 255, 0.1f);
+            workingImage = drawPoints(workingImage, harrisCorner(workingImage, 30, 6750, createGaussianFilterDouble(5, 5)) , 9, 255);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
-            workingImage = thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 50);
             //workingImage = thresholdImage(workingImage, 128);
             //workingImage = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
             //workingImage = equalizeImage(workingImage);
@@ -1456,6 +1457,7 @@ namespace INFOIBV
                                 Point p2 = new Point(neighbour.px, neighbour.py);
                                 Point p3 = new Point(q.px, q.py);
                                 Driehoek triangle = new Driehoek(p1, p2, p3);
+                                triangle.ID = ID;
                                 figuren.Add(triangle);
                             }
                         }
@@ -1473,7 +1475,7 @@ namespace INFOIBV
                     {
                         foreach (Punt neighbourOfNeighbour in neighbour.connectedPoints)
                         {
-                            if (neighbourOfNeighbour != p && neighbourOfNeighbour.connectedPoints.Contains(neighbour2))
+                            if (neighbourOfNeighbour != p && neighbour != neighbour2 && neighbourOfNeighbour.connectedPoints.Contains(neighbour2))
                             {
                                 bool isUnique = Vierkant.isUnique(p, neighbour, neighbour2, neighbourOfNeighbour);
                                 if (isUnique)
@@ -1486,9 +1488,10 @@ namespace INFOIBV
                                     squareCount++;
                                     Point p1 = new Point(p.px, p.py);
                                     Point p2 = new Point(neighbour.px, neighbour.py);
-                                    Point p3 = new Point(neighbour2.px, neighbour2.py);
-                                    Point p4 = new Point(neighbourOfNeighbour.px, neighbourOfNeighbour.py);
+                                    Point p4 = new Point(neighbour2.px, neighbour2.py);
+                                    Point p3 = new Point(neighbourOfNeighbour.px, neighbourOfNeighbour.py);
                                     Vierkant square = new Vierkant(p1, p2, p3, p4);
+                                    square.ID = ID;
                                     figuren.Add(square);
                                 }
 
@@ -1499,6 +1502,17 @@ namespace INFOIBV
             }
             
             return figuren;
+        }
+
+        public List<Point> figurenToLineSegments(List<Figuur> figuren)
+        {
+            List<Point> punten = new List<Point>();
+            foreach (Figuur f in figuren)
+            {
+                f.getLineSegments(punten);
+            }
+
+            return punten;
         }
         
     }
@@ -1626,13 +1640,29 @@ namespace INFOIBV
     public class Figuur
     {
         public string ID;
+        
+        public virtual void getLineSegments(List<Point> punten)
+        {
+            
+        }
     }
+    
 
     public class Driehoek : Figuur
     {
         public Point P1;
         public Point P2;
         public Point P3;
+
+        public override void getLineSegments(List<Point> points)
+        {
+            points.Add(P1);
+            points.Add(P2);
+            points.Add(P2);
+            points.Add(P3);
+            points.Add(P3);
+            points.Add(P1);
+        }
 
         public Driehoek(Point p1, Point p2, Point p3)
         {
@@ -1666,8 +1696,20 @@ namespace INFOIBV
             P2 = p2;
             P3 = p3;
             P4 = p4;
-        } 
-        
+        }
+
+        public override void getLineSegments(List<Point> points)
+        {
+            points.Add(P1);
+            points.Add(P2);
+            points.Add(P2);
+            points.Add(P3);
+            points.Add(P3);
+            points.Add(P4);
+            points.Add(P4);
+            points.Add(P1);
+        }
+
         public static bool isUnique(Punt tp1, Punt tp2, Punt tp3, Punt tp4)
         {
             //Checking if the square is unique
