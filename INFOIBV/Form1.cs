@@ -62,7 +62,7 @@ namespace INFOIBV
             // ====================================================================
 
 
-            byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
+            byte[,] workingImage = convertToGrayscaleMax(Image);          // convert image to grayscale
             //workingImage = pipeLine(workingImage);
             workingImage = adjustContrast(workingImage);
             workingImage = openImage(workingImage, createStructuringElement('c', 5));
@@ -70,17 +70,18 @@ namespace INFOIBV
 
             byte[,] copyToDisplay = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
             workingImage = pipeLine(workingImage);
-
-            List<Point> corners = harrisCorner(workingImage, 15, 6750, createGaussianFilterDouble(15, 5));
-            //workingImage = thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30);
-            drawPoints(workingImage, corners, 9, 255);
-            List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
-            List<Point> points = puntenToLineSegments(corners,
-                thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
-            List<Point> pts = figurenToLineSegments(figuren);
-            workingImage = copyToDisplay;
-            workingImage = imposeLines(workingImage, pts, 255, 0.1f);
-            workingImage = drawPoints(workingImage, corners, 9, 255);
+            workingImage = drawCenterBox(workingImage, new Point(200, 200), new Point(500, 220));
+            workingImage = drawBoundingBox(workingImage, new Point(50, 200), new Point(30, 220));
+            //List<Point> corners = harrisCorner(workingImage, 15, 6750, createGaussianFilterDouble(15, 5));
+            ////workingImage = thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30);
+            //drawPoints(workingImage, corners, 9, 255);
+            //List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
+            //List<Point> points = puntenToLineSegments(corners,
+            //    thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
+            //List<Point> pts = figurenToLineSegments(figuren);
+            //workingImage = copyToDisplay;
+            //workingImage = imposeLines(workingImage, pts, 255, 0.1f);
+            //workingImage = drawPoints(workingImage, corners, 9, 255);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = thresholdImage(workingImage, 128);
@@ -1154,7 +1155,10 @@ namespace INFOIBV
                     int low = Math.Min(lines[i].Y, lines[i + 1].Y);
                     for (int y = 0; y < high - low; y++)
                     {
-                        workingImage[lines[i].X, low + y] = color;
+                        if (lines[i].X >= 0 && lines[i].X < workingImage.GetLength(0) && low + y >= 0 && low + y < workingImage.GetLength(1))
+                        {
+                            workingImage[lines[i].X, low + y] = color;
+                        }
                     }
                 }
                 else
@@ -1185,6 +1189,25 @@ namespace INFOIBV
             return workingImage;
         }
         #endregion
+
+        private byte[,] drawBoundingBox(byte[,] inputImage, Point one, Point two)
+        {
+            Point three = new Point(one.X, two.Y);
+            Point four = new Point(two.X, one.Y);
+            inputImage = imposeLines(inputImage, new List<Point>
+            {
+                one, three,
+                three, two,
+                two, four,
+                one, four
+            }, 255, 1.0f);
+            return inputImage;
+        }
+
+        private byte[,] drawCenterBox(byte[,] inputImage, Point center, Point target)
+        {
+            return drawBoundingBox(inputImage, new Point(2 * center.X - target.X , 2 * center.Y - target.Y), target);
+        }
 
         private byte[,] drawPoints(byte[,] inputImage, List<Point> points, int size, byte color)
         {
