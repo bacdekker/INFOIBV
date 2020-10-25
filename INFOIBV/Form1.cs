@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.IO;
 using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace INFOIBV
 {
@@ -63,17 +64,19 @@ namespace INFOIBV
 
 
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
+
                                                                        //workingImage = pipeLine(workingImage);
             workingImage = convolveImage(workingImage, createGaussianFilter(5, 4f));
             workingImage = closeImage(workingImage, createStructuringElement('c', 15));
             workingImage = convolveImage(workingImage, new float[,] { { 0, -1, 0 }, { -1, 5, -1 }, { 0, -1, 0 } });
             workingImage = adjustContrast(workingImage);
             workingImage = medianFilter(workingImage, 7);
-            List<Point> corners = harrisCorner(workingImage, 20, 6500, createGaussianFilterDouble(7, 5f));
-            workingImage = detectTriangles(workingImage, corners);
+
+            List<Point> corners = harrisCorner(workingImage, 10, 6500, createGaussianFilterDouble(7, 5f));
+            workingImage = detectTriangles(workingImage, corners, workingImage);
 
 
-            //byte[,] copyToDisplay = equalizeImage(workingImage);
+
             //workingImage = drawCenterBox(workingImage, new Point(200, 200), new Point(500, 220));
             //workingImage = drawBoundingBox(workingImage, new Point(50, 200), new Point(30, 220));
 
@@ -1258,7 +1261,8 @@ namespace INFOIBV
                         {
                             List<int> neighbours = new List<int> { im[x - 1, y - 1], im[x - 1, y], im[x + 1, y], im[x, y - 1], im[x, y + 1], im[x + 1, y - 1], im[x + 1, y], im[x + 1, y + 1] };
                             neighbours.RemoveAll(q => q == 0);
-                            im[x, y] = neighbours.Min();
+                            if (neighbours.Any()) im[x, y] = neighbours.Min();
+                            else im[x, y] = 0;
                         }
                     }
                 }
@@ -1282,7 +1286,7 @@ namespace INFOIBV
             }
             return inputImage;
         }
-        private byte[,] detectTriangles(byte[,] inputImage, List<Point> corners)
+        private byte[,] detectTriangles(byte[,] inputImage, List<Point> corners, byte[,] drawImage)
         {
             List<List<Point>> shapes = new List<List<Point>>();
             byte[,] regionImage = thresholdImage(inputImage, 180);
@@ -1310,11 +1314,95 @@ namespace INFOIBV
             }
             for (int i = 0; i < shapes.Count; i++)
             {
-                drawPoints(inputImage, shapes[i], 10, (byte)(i * 20));
+                drawImage = drawPoints(drawImage, shapes[i], 10, (byte)(i * 20));
+                if (isSharkTooth(shapes[i]))
+                {
+                    drawImage = drawBoundingBox(drawImage, findMaximumCorners(shapes[i]).Item1, findMaximumCorners(shapes[i]).Item2);
+                }
+                // drawImage = drawPoints(drawImage, isSharkTooth(shapes[i]),10, 255);
             }
-
-            return inputImage;
+            return drawImage;
         }
+        private bool isSharkTooth(List<Point> points)
+        {
+            List<Point> pt = new List<Point>();
+            foreach(Point p in points)
+            {
+                pt.Add(new Point(p.X, p.Y));
+            }
+            if (pt.Count < 3) return false;
+            Point mid = findMid(pt);
+            Point farthestPoint;
+            float farthest;
+            List<Point> remove = new List<Point>();
+            List<Point> corners = new List<Point>();
+            for (int i = 0; i < 3 && pt.Any(); i++)
+            {
+                farthestPoint = findFarthest(pt, mid);
+                farthest = (farthestPoint.X - mid.X) * (farthestPoint.X - mid.X) + (farthestPoint.Y - mid.Y) * (farthestPoint.Y - mid.Y);
+                corners.Add(farthestPoint);
+                pt.Remove(farthestPoint);
+
+                foreach (Point p in pt)
+                {
+                    float temp = (p.X - farthestPoint.X) * (p.X - farthestPoint.X) + (p.Y - farthestPoint.Y) * (p.Y - farthestPoint.Y);
+                    if (temp < farthest) remove.Add(p);
+                }
+                foreach (Point p in remove)
+                {
+                    pt.Remove(p);
+                }
+                remove.Clear();
+            }
+            if (corners.Count < 3) return false;
+            double A = area(corners[0], corners[1], corners[2]);
+            double A2 = area(mid, corners[1], corners[2]) + area(corners[0], mid, corners[2]) + area(corners[0], corners[1], mid);
+            if (Math.Abs(A - A2) < 10) return true;
+            return false;
+        }
+
+        private double area(Point p1, Point p2, Point p3)
+        {
+            return Math.Abs(p1.X * (p2.Y - p3.Y) + p2.X * (p3.Y - p1.Y) + p3.X*(p1.Y - p2.Y)) / 2;
+        }
+        private Tuple<Point, Point> findMaximumCorners(List<Point> points)
+        {
+            Point LT = findMid(points);
+            Point RB = findMid(points);
+            foreach (Point p in points)
+            {
+                if (p.X > RB.X) RB.X = p.X;
+                if (p.X < LT.X) LT.X = p.X;
+                if (p.Y > RB.Y) RB.Y = p.Y;
+                if (p.Y < LT.Y) LT.Y = p.Y;
+            }
+            return new Tuple<Point, Point>(LT,RB) ;
+        }
+
+        private Point findMid(List<Point> points)
+        {
+            int x = 0;
+            int y = 0;
+            foreach (Point p in points)
+            {
+                x += p.X;
+                y += p.Y;
+            }
+            x /= points.Count;
+            y /= points.Count;
+            return new Point(x, y);
+        }
+        private Point findFarthest(List<Point> points, Point mid)
+        {
+            Point farthest = mid;
+            foreach (Point p in points)
+            {
+                if ((p.X-mid.X) * (p.X-mid.X) + (p.Y-mid.Y) * (p.Y-mid.Y) > (farthest.X-mid.X) * (farthest.X-mid.X) + (farthest.Y-mid.Y) * (farthest.Y-mid.Y)) farthest = p;
+
+            }
+            return farthest;
+        }
+
         private byte[,] drawBoundingBox(byte[,] inputImage, Point one, Point two)
         {
             Point three = new Point(one.X, two.Y);
