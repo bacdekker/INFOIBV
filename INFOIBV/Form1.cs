@@ -62,25 +62,27 @@ namespace INFOIBV
             // ====================================================================
 
 
-            byte[,] workingImage = convertToGrayscaleMax(Image);          // convert image to grayscale
-            //workingImage = pipeLine(workingImage);
+            byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
+                                                                          //workingImage = pipeLine(workingImage);
+            workingImage = convolveImage(workingImage, createGaussianFilter(5, 4f));
+            //workingImage = medianFilter(workingImage, 5);
+            workingImage = closeImage(workingImage, createStructuringElement('c', 15));
+            workingImage = convolveImage(workingImage, new float[,] { { 0, -1, 0 }, { -1, 5, -1 }, { 0, -1, 0 } });
             workingImage = adjustContrast(workingImage);
-            workingImage = openImage(workingImage, createStructuringElement('c', 5));
-            //workingImage = convolveImage(workingImage, createGaussianFilter(3, 1f));
+            //workingImage = thresholdImage(workingImage, 180);
+            workingImage = medianFilter(workingImage, 7);
 
-            byte[,] copyToDisplay = edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel());
-            workingImage = pipeLine(workingImage);
+
+            //byte[,] copyToDisplay = equalizeImage(workingImage);
             //workingImage = drawCenterBox(workingImage, new Point(200, 200), new Point(500, 220));
             //workingImage = drawBoundingBox(workingImage, new Point(50, 200), new Point(30, 220));
-            List<Point> corners = harrisCorner(workingImage, 15, 6750, createGaussianFilterDouble(15, 5));
-            //workingImage = thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 30);
-            drawPoints(workingImage, corners, 9, 255);
-            //List<Figuur> figuren = objectDetection(Punt.convert(corners), thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
-            //List<Point> points = puntenToLineSegments(corners, thresholdImage(edgeMagnitude(workingImage, HorizontalKernel(), VerticalKernel()), 10), workingImage);
-            //List<Point> pts = figurenToLineSegments(figuren);
-            workingImage = copyToDisplay;
-            //workingImage = imposeLines(workingImage, pts, 255, 0.1f);
-            workingImage = drawPoints(workingImage, corners, 9, 255);
+            List<Point> corners = harrisCorner(workingImage, 50, 6500, createGaussianFilterDouble(7, 5f));
+            List<Figuur> figuren = objectDetection(Punt.convert(corners), workingImage, workingImage);
+            List<Point> points = puntenToLineSegments(corners, workingImage, workingImage);
+            List<Point> pts = figurenToLineSegments(figuren);
+            //workingImage = copyToDisplay;
+            workingImage = imposeLines(workingImage, pts, 0, 1f);
+            workingImage = drawPoints(workingImage, corners, 9, 0);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = thresholdImage(workingImage, 128);
@@ -451,7 +453,7 @@ namespace INFOIBV
                         }
                     }
 
-                    finalImage[x, y] = (byte)val;
+                    finalImage[x, y] = (byte)(Math.Min(255,val));
                 }
             }
 
@@ -709,7 +711,7 @@ namespace INFOIBV
                     {
                         for (int y = -(size / 2); y < size / 2 + 1; y++)
                         {
-                            if (x * x + y + y <= (size / 2) * (size / 2))
+                            if (x * x + y * y <= (size / 2) * (size / 2))
                             {
                                 element.Add(new ElementPoint { x = x, y = y, value = 1 });
                             }
@@ -1210,39 +1212,39 @@ namespace INFOIBV
 
         private byte[,] drawPoints(byte[,] inputImage, List<Point> points, int size, byte color)
         {
-            //foreach (Point p in points)
-            //{
-            //    for (int x = -(size / 2); x < size / 2 + 1; x++)
-            //    {
-            //        for (int y = -(size / 2); y < size / 2 + 1; y++)
-            //        {
-            //            if (x * x + y * y <= (size / 2) * (size / 2))
-            //            {
-            //                if (x + p.X >= 0 && x + p.X < inputImage.GetLength(0) && y + p.Y >= 0 && y + p.Y < inputImage.GetLength(1))
-            //                {
-            //                    inputImage[x + p.X, y + p.Y] = color;
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
             foreach (Point p in points)
             {
                 for (int x = -(size / 2); x < size / 2 + 1; x++)
                 {
-                    if (x + p.X >= 0 && x + p.X < inputImage.GetLength(0) && p.Y >= 0 && p.Y < inputImage.GetLength(1))
+                    for (int y = -(size / 2); y < size / 2 + 1; y++)
                     {
-                        inputImage[x + p.X, p.Y] = color;
-                    }
-                }
-                for (int y = -(size / 2); y < size / 2 + 1; y++)
-                {
-                    if (p.X >= 0 && p.X < inputImage.GetLength(0) && y + p.Y >= 0 && y + p.Y < inputImage.GetLength(1))
-                    {
-                        inputImage[p.X, y + p.Y] = color;
+                        if (x * x + y * y <= (size / 2) * (size / 2))
+                        {
+                            if (x + p.X >= 0 && x + p.X < inputImage.GetLength(0) && y + p.Y >= 0 && y + p.Y < inputImage.GetLength(1))
+                            {
+                                inputImage[x + p.X, y + p.Y] = color;
+                            }
+                        }
                     }
                 }
             }
+            //foreach (Point p in points)
+            //{
+            //    for (int x = -(size / 2); x < size / 2 + 1; x++)
+            //    {
+            //        if (x + p.X >= 0 && x + p.X < inputImage.GetLength(0) && p.Y >= 0 && p.Y < inputImage.GetLength(1))
+            //        {
+            //            inputImage[x + p.X, p.Y] = color;
+            //        }
+            //    }
+            //    for (int y = -(size / 2); y < size / 2 + 1; y++)
+            //    {
+            //        if (p.X >= 0 && p.X < inputImage.GetLength(0) && y + p.Y >= 0 && y + p.Y < inputImage.GetLength(1))
+            //        {
+            //            inputImage[p.X, y + p.Y] = color;
+            //        }
+            //    }
+            //}
             return inputImage;
         }
 
@@ -1258,24 +1260,24 @@ namespace INFOIBV
             {
                 for (int y = 2; y < inputImage.GetLength(1) - 2; y++)
                 {
-                    //double sobelx = 0.125f * (-inputImage[x - 1, y - 1] - 2 * inputImage[x - 1, y] - inputImage[x - 1, y + 1] + inputImage[x + 1, y - 1] + 2 * inputImage[x + 1, y] + inputImage[x + 1, y + 1]);
-                    //double sobely = 0.125f * (-inputImage[x - 1, y - 1] - 2 * inputImage[x, y - 1] - inputImage[x + 1, y - 1] + inputImage[x - 1, y + 1] + 2 * inputImage[x, y + 1] + inputImage[x + 1, y + 1]);
-                    double sobelx = 1 * inputImage[x - 2, y - 2] +  2 * inputImage[x - 1, y - 2] - ( 2 * inputImage[x + 1, y - 2] + 1 * inputImage[x + 2, y - 2]) +
-                                    4 * inputImage[x - 2, y - 1] +  8 * inputImage[x - 1, y - 1] - ( 8 * inputImage[x + 1, y - 1] + 4 * inputImage[x + 2, y - 1]) +
-                                    6 * inputImage[x - 2, y    ] + 12 * inputImage[x - 1, y    ] - (12 * inputImage[x + 1, y    ] + 6 * inputImage[x + 2, y    ]) +
-                                    4 * inputImage[x - 2, y + 1] +  8 * inputImage[x - 1, y + 1] - ( 8 * inputImage[x + 1, y + 1] + 4 * inputImage[x + 2, y + 1]) +
-                                    1 * inputImage[x - 2, y + 2] +  2 * inputImage[x - 1, y + 2] - ( 2 * inputImage[x + 1, y + 2] + 1 * inputImage[x + 2, y + 2]);
+                    double sobelx = 0.125f * (-inputImage[x - 1, y - 1] - 2 * inputImage[x - 1, y] - inputImage[x - 1, y + 1] + inputImage[x + 1, y - 1] + 2 * inputImage[x + 1, y] + inputImage[x + 1, y + 1]);
+                    double sobely = 0.125f * (-inputImage[x - 1, y - 1] - 2 * inputImage[x, y - 1] - inputImage[x + 1, y - 1] + inputImage[x - 1, y + 1] + 2 * inputImage[x, y + 1] + inputImage[x + 1, y + 1]);
+                    //double sobelx = 1 * inputImage[x - 2, y - 2] +  2 * inputImage[x - 1, y - 2] - ( 2 * inputImage[x + 1, y - 2] + 1 * inputImage[x + 2, y - 2]) +
+                    //                4 * inputImage[x - 2, y - 1] +  8 * inputImage[x - 1, y - 1] - ( 8 * inputImage[x + 1, y - 1] + 4 * inputImage[x + 2, y - 1]) +
+                    //                6 * inputImage[x - 2, y    ] + 12 * inputImage[x - 1, y    ] - (12 * inputImage[x + 1, y    ] + 6 * inputImage[x + 2, y    ]) +
+                    //                4 * inputImage[x - 2, y + 1] +  8 * inputImage[x - 1, y + 1] - ( 8 * inputImage[x + 1, y + 1] + 4 * inputImage[x + 2, y + 1]) +
+                    //                1 * inputImage[x - 2, y + 2] +  2 * inputImage[x - 1, y + 2] - ( 2 * inputImage[x + 1, y + 2] + 1 * inputImage[x + 2, y + 2]);
 
-                    double sobely = -(1 * inputImage[x - 2, y - 2] + 4 * inputImage[x - 1, y - 2] +  6 * inputImage[x, y - 2] + 4 * inputImage[x + 1, y - 2] + 1 * inputImage[x + 2, y - 2]) +
-                                    -(2 * inputImage[x - 2, y - 1] + 8 * inputImage[x - 1, y - 1] + 12 * inputImage[x, y - 1] + 8 * inputImage[x + 1, y - 1] + 2 * inputImage[x + 2, y - 1]) +
-                                      2 * inputImage[x - 2, y + 1] + 8 * inputImage[x - 1, y + 1] + 12 * inputImage[x, y + 1] + 8 * inputImage[x + 1, y + 1] + 2 * inputImage[x + 2, y + 1] +
-                                      1 * inputImage[x - 2, y + 2] + 4 * inputImage[x - 1, y + 2] +  6 * inputImage[x, y + 2] + 4 * inputImage[x + 1, y + 2] + 1 * inputImage[x + 2, y + 2];
+                    //double sobely = -(1 * inputImage[x - 2, y - 2] + 4 * inputImage[x - 1, y - 2] +  6 * inputImage[x, y - 2] + 4 * inputImage[x + 1, y - 2] + 1 * inputImage[x + 2, y - 2]) +
+                    //                -(2 * inputImage[x - 2, y - 1] + 8 * inputImage[x - 1, y - 1] + 12 * inputImage[x, y - 1] + 8 * inputImage[x + 1, y - 1] + 2 * inputImage[x + 2, y - 1]) +
+                    //                  2 * inputImage[x - 2, y + 1] + 8 * inputImage[x - 1, y + 1] + 12 * inputImage[x, y + 1] + 8 * inputImage[x + 1, y + 1] + 2 * inputImage[x + 2, y + 1] +
+                    //                  1 * inputImage[x - 2, y + 2] + 4 * inputImage[x - 1, y + 2] +  6 * inputImage[x, y + 2] + 4 * inputImage[x + 1, y + 2] + 1 * inputImage[x + 2, y + 2];
 
-                    sobelx *= 0.01041666666f;
-                    sobely *= 0.01041666666f;
+                    //sobelx *= 0.01041666666f;
+                    //sobely *= 0.01041666666f;
                     A[x, y] = sobelx * sobelx;
                     B[x, y] = sobely * sobely;
-                    C[x, y] = sobelx * sobely;
+                    C[x, y] = Math.Abs(sobelx * sobely);
                 }
             }
             A = convolveImageDouble(A, filter);
@@ -1732,7 +1734,7 @@ namespace INFOIBV
             }
 
             //We have an error margin of 20% due to the discrete nature of pixels 
-            if (0.1 * samples < amountOfWrongSamples || 0.1 * samples < amountOfPixelsNotOnEdges)
+            if (0.05 * samples < amountOfWrongSamples || 0.05 * samples < amountOfPixelsNotOnEdges)
                 return false;
             
             connectedPoints.Add(p);
