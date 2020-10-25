@@ -63,26 +63,27 @@ namespace INFOIBV
 
 
             byte[,] workingImage = convertToGrayscale(Image);          // convert image to grayscale
-                                                                          //workingImage = pipeLine(workingImage);
+                                                                       //workingImage = pipeLine(workingImage);
             workingImage = convolveImage(workingImage, createGaussianFilter(5, 4f));
-            //workingImage = medianFilter(workingImage, 5);
             workingImage = closeImage(workingImage, createStructuringElement('c', 15));
             workingImage = convolveImage(workingImage, new float[,] { { 0, -1, 0 }, { -1, 5, -1 }, { 0, -1, 0 } });
             workingImage = adjustContrast(workingImage);
-            //workingImage = thresholdImage(workingImage, 180);
             workingImage = medianFilter(workingImage, 7);
+            List<Point> corners = harrisCorner(workingImage, 20, 6500, createGaussianFilterDouble(7, 5f));
+            workingImage = detectTriangles(workingImage, corners);
 
 
             //byte[,] copyToDisplay = equalizeImage(workingImage);
             //workingImage = drawCenterBox(workingImage, new Point(200, 200), new Point(500, 220));
             //workingImage = drawBoundingBox(workingImage, new Point(50, 200), new Point(30, 220));
-            List<Point> corners = harrisCorner(workingImage, 50, 6500, createGaussianFilterDouble(7, 5f));
-            List<Figuur> figuren = objectDetection(Punt.convert(corners), workingImage, workingImage);
-            List<Point> points = puntenToLineSegments(corners, workingImage, workingImage);
-            List<Point> pts = figurenToLineSegments(figuren);
+
+            //List<Figuur> figuren = objectDetection(Punt.convert(corners), workingImage, workingImage);
+            //List<Point> points = puntenToLineSegments(corners, workingImage, workingImage);
+            //List<Point> pts = figurenToLineSegments(figuren);
             //workingImage = copyToDisplay;
-            workingImage = imposeLines(workingImage, pts, 0, 1f);
-            workingImage = drawPoints(workingImage, corners, 9, 0);
+
+            //workingImage = imposeLines(workingImage, pts, 0, 1f);
+            //workingImage = drawPoints(workingImage, corners, 9, 0);
             //workingImage = convolveImage(workingImage, createGaussianFilter(11, 5f));
             //workingImage = medianFilter(workingImage, 5); // Size needs to be odd
             //workingImage = thresholdImage(workingImage, 128);
@@ -134,6 +135,7 @@ namespace INFOIBV
 
             pictureBox2.Image = (Image)OutputImage;                         // display output image
         }
+
 
 
         /*
@@ -453,7 +455,7 @@ namespace INFOIBV
                         }
                     }
 
-                    finalImage[x, y] = (byte)(Math.Min(255,val));
+                    finalImage[x, y] = (byte)(Math.Min(255, val));
                 }
             }
 
@@ -1191,6 +1193,128 @@ namespace INFOIBV
         }
         #endregion
 
+
+        private byte[,] findRegions(byte[,] inputImage)
+        {
+            int[,] im = new int[inputImage.GetLength(0), inputImage.GetLength(1)];
+            int highest = 1;
+            for (int x = 1; x < inputImage.GetLength(0) - 1; x++)
+            {
+                for (int y = 1; y < inputImage.GetLength(1) - 1; y++)
+                {
+                    if (inputImage[x, y] == 255)
+                    {
+                        if (im[x, y - 1] != 0 && im[x, y - 1] != 255)
+                        {
+                            im[x, y] = inputImage[x, y - 1];
+                            inputImage[x, y] = inputImage[x, y - 1];
+                        }
+                        else if (inputImage[x - 1, y] != 0 && im[x - 1, y] != 255)
+                        {
+                            im[x, y] = inputImage[x - 1, y];
+                            inputImage[x, y] = inputImage[x - 1, y];
+                        }
+                        else if (inputImage[x - 1, y - 1] != 0 && im[x - 1, y - 1] != 255)
+                        {
+                            im[x, y] = inputImage[x - 1, y - 1];
+                            inputImage[x, y] = inputImage[x - 1, y - 1];
+                        }
+                        else if (inputImage[x + 1, y - 1] != 0 && im[x + 1, y - 1] != 255)
+                        {
+                            im[x, y] = inputImage[x + 1, y - 1];
+                            inputImage[x, y] = inputImage[x + 1, y - 1];
+                        }
+                        else
+                        {
+                            im[x, y] = highest;
+                            inputImage[x, y] = (byte)highest;
+                            highest++;
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < 2; i++)
+            {
+
+
+                for (int x = 1; x < im.GetLength(0) - 1; x++)
+                {
+                    for (int y = 1; y < im.GetLength(1) - 1; y++)
+                    {
+                        if (im[x, y] > 0)
+                        {
+                            List<int> neighbours = new List<int> { im[x - 1, y - 1], im[x - 1, y], im[x + 1, y], im[x, y - 1], im[x, y + 1], im[x + 1, y - 1], im[x + 1, y], im[x + 1, y + 1] };
+                            neighbours.RemoveAll(q => q == 0);
+                            if (neighbours.Any()) im[x, y] = neighbours.Min();
+                            else im[x, y] = 0;
+                        }
+                    }
+                }
+                for (int x = im.GetLength(0) - 2; x > 0; x--)
+                {
+                    for (int y = im.GetLength(1) - 2; y > 0; y--)
+                    {
+                        if (im[x, y] > 0)
+                        {
+                            List<int> neighbours = new List<int> { im[x - 1, y - 1], im[x - 1, y], im[x + 1, y], im[x, y - 1], im[x, y + 1], im[x + 1, y - 1], im[x + 1, y], im[x + 1, y + 1] };
+                            neighbours.RemoveAll(q => q == 0);
+                            im[x, y] = neighbours.Min();
+                        }
+                    }
+                }
+            }
+            List<int> values = new List<int>();
+            for (int x = 0; x < im.GetLength(0); x++)
+            {
+                for (int y = 0; y < im.GetLength(1); y++)
+                {
+                    if (!values.Contains(im[x, y])) values.Add(im[x, y]);
+                }
+            }
+
+
+            for (int x = 0; x < im.GetLength(0); x++)
+            {
+                for (int y = 0; y < im.GetLength(1); y++)
+                {
+                    inputImage[x, y] = (byte)values.FindIndex(q => q == im[x, y]);
+                }
+            }
+            return inputImage;
+        }
+        private byte[,] detectTriangles(byte[,] inputImage, List<Point> corners)
+        {
+            List<List<Point>> shapes = new List<List<Point>>();
+            byte[,] regionImage = thresholdImage(inputImage, 180);
+            regionImage = findRegions(regionImage);
+            regionImage = dilateImage(regionImage, createStructuringElement('c', 25));
+            for (int i = 1; i < 255; i++)
+            {
+                List<Point> temp = new List<Point>();
+                for (int x = 0; x < inputImage.GetLength(0); x++)
+                {
+                    for (int y = 0; y < inputImage.GetLength(1); y++)
+                    {
+                        if (regionImage[x, y] == i)
+                        {
+                            if (corners.Contains(new Point(x, y)))
+                            {
+                                corners.Remove(new Point(x, y));
+                                temp.Add(new Point(x, y));
+                            }
+                        }
+                    }
+                }
+                if (!temp.Any()) continue;
+                else shapes.Add(temp);
+            }
+            for (int i = 0; i < shapes.Count; i++)
+            {
+                drawPoints(inputImage, shapes[i], 10, (byte)(i * 20));
+            }
+
+            return inputImage;
+        }
         private byte[,] drawBoundingBox(byte[,] inputImage, Point one, Point two)
         {
             Point three = new Point(one.X, two.Y);
@@ -1207,7 +1331,7 @@ namespace INFOIBV
 
         private byte[,] drawCenterBox(byte[,] inputImage, Point center, Point target)
         {
-            return drawBoundingBox(inputImage, new Point(2 * center.X - target.X , 2 * center.Y - target.Y), target);
+            return drawBoundingBox(inputImage, new Point(2 * center.X - target.X, 2 * center.Y - target.Y), target);
         }
 
         private byte[,] drawPoints(byte[,] inputImage, List<Point> points, int size, byte color)
@@ -1483,7 +1607,7 @@ namespace INFOIBV
         public List<Point> puntenToLineSegments(List<Point> pts, byte[,] edgeStrength, byte[,] inputImage)
         {
             List<Punt> punten = Punt.convert(pts);
-            
+
             for (int i = 0; i < punten.Count; i++)
             {
                 for (int j = i + 1; j < punten.Count; j++)
@@ -1491,7 +1615,7 @@ namespace INFOIBV
                     punten[i].isConnectedWith(edgeStrength, inputImage, punten[j]);
                 }
             }
-            
+
             List<Point> segmenten = new List<Point>();
             foreach (Punt p in punten)
             {
@@ -1510,7 +1634,7 @@ namespace INFOIBV
         public List<Figuur> objectDetection(List<Punt> gedetecteerdePunten, byte[,] edgeStrength, byte[,] inputImage)
         {
             //Checks which points are connected with each other
-            
+
             for (int i = 0; i < gedetecteerdePunten.Count; i++)
             {
                 for (int j = i + 1; j < gedetecteerdePunten.Count; j++)
@@ -1521,8 +1645,8 @@ namespace INFOIBV
 
             int trianglecount = 0;
             List<Figuur> figuren = new List<Figuur>();
-            
-            
+
+
             //Checks for triangles
             foreach (Punt p in gedetecteerdePunten)
             {
@@ -1531,7 +1655,7 @@ namespace INFOIBV
                     foreach (Punt q in neighbour.connectedPoints)
                     {
                         //We found a triangle
-                        if(p.connectedPoints.Contains(q))
+                        if (p.connectedPoints.Contains(q))
                         {
                             bool isUnique = Driehoek.isUnique(p, neighbour, q);
                             if (isUnique)
@@ -1588,7 +1712,7 @@ namespace INFOIBV
                     }
                 }
             }
-            
+
             return figuren;
         }
 
@@ -1620,7 +1744,7 @@ namespace INFOIBV
                 for (int y = 0; y < InputImage.Size.Height; y++)            // loop over rows
                 {
                     Color pixelColor = inputImage[x, y];                    // get pixel color
-                    byte average = (byte)(Math.Min((byte)255,(Math.Max(Math.Max(pixelColor.R, pixelColor.B), pixelColor.G)))); // calculate average over the three channels
+                    byte average = (byte)(Math.Min((byte)255, (Math.Max(Math.Max(pixelColor.R, pixelColor.B), pixelColor.G)))); // calculate average over the three channels
                     tempImage[x, y] = average;                              // set the new pixel color at coordinate (x,y)
                     progressBar.PerformStep();                              // increment progress bar
                 }
@@ -1698,45 +1822,45 @@ namespace INFOIBV
 
             return distance;
         }
-        
+
         public bool isConnectedWith(byte[,] edgeStrength, byte[,] inputImage, Punt p)
         {
             //If the points themselves have a very different amount greyness, then they are not on the same edge
             if (Math.Abs(inputImage[px, py] - inputImage[p.px, p.py]) > 5)
                 return false;
-            
+
             //Calculate the distance
-            int distance = (int) (Math.Sqrt(Math.Pow(p.px - px, 2) + Math.Pow(p.py - py, 2)));
-            
+            int distance = (int)(Math.Sqrt(Math.Pow(p.px - px, 2) + Math.Pow(p.py - py, 2)));
+
             //A sampling parameter is chosen based on the distance.
             //If the distance is bigger then we have to sample less points per unit of distance
             //because the chance that we only encounter good points is then really small.
 
             int samples = distance; //(int)Math.Ceiling(Math.Sqrt(distance));
-            
+
             //Checking to see if the pixels that we sample are on the edge
             int sampleGreyValue = inputImage[px, py];
             int amountOfWrongSamples = 0;
             int amountOfPixelsNotOnEdges = 0;
-            
+
             for (int i = 1; i < samples; i++)
             {
                 //Getting cords for the sample
-                int x = (int)(((samples - i) * px + i * p.px)/((double)samples));
-                int y = (int)(((samples - i) * py + i * p.py)/((double)samples));
+                int x = (int)(((samples - i) * px + i * p.px) / ((double)samples));
+                int y = (int)(((samples - i) * py + i * p.py) / ((double)samples));
 
                 // So the pixel doesn't lie on an edge
                 if (maxValue(edgeStrength, x, y, 5) < 128)
                     amountOfPixelsNotOnEdges += 1;
 
-               // if (closestValue(inputImage, x, y, 5, inputImage[px, py]) > 20 )
-               //     amountOfWrongSamples += 1;
+                // if (closestValue(inputImage, x, y, 5, inputImage[px, py]) > 20 )
+                //     amountOfWrongSamples += 1;
             }
 
             //We have an error margin of 20% due to the discrete nature of pixels 
-            if (0.05 * samples < amountOfWrongSamples || 0.05 * samples < amountOfPixelsNotOnEdges)
+            if (0.2 * samples < amountOfWrongSamples || 0.2 * samples < amountOfPixelsNotOnEdges)
                 return false;
-            
+
             connectedPoints.Add(p);
             p.connectedPoints.Add(this);
             return true;
@@ -1746,13 +1870,13 @@ namespace INFOIBV
     public class Figuur
     {
         public string ID;
-        
+
         public virtual void getLineSegments(List<Point> punten)
         {
-            
+
         }
     }
-    
+
 
     public class Driehoek : Figuur
     {
@@ -1795,7 +1919,7 @@ namespace INFOIBV
         public Point P2;
         public Point P3;
         public Point P4;
-        
+
         public Vierkant(Point p1, Point p2, Point p3, Point p4)
         {
             P1 = p1;
@@ -1824,17 +1948,17 @@ namespace INFOIBV
                 if (tp2.objects.Contains(ID) && tp3.objects.Contains(ID) && tp4.objects.Contains(ID))
                     return false;
             }
-            
+
             //Checking if a triangle can be made with tp1
 
             foreach (string ID in tp1.objects)
             {
-                if (tp2.objects.Contains(ID) && tp3.objects.Contains(ID) && ID.Contains("T")|| 
+                if (tp2.objects.Contains(ID) && tp3.objects.Contains(ID) && ID.Contains("T") ||
                     tp2.objects.Contains(ID) && tp4.objects.Contains(ID) && ID.Contains("T") ||
                     tp3.objects.Contains(ID) && tp4.objects.Contains(ID) && ID.Contains("T"))
                     return false;
             }
-            
+
             //Checking if a triangle can be make with tp 2
             foreach (string ID in tp2.objects)
             {
@@ -1844,5 +1968,5 @@ namespace INFOIBV
             return true;
         }
     }
-    
+
 }
