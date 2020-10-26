@@ -1323,38 +1323,88 @@ namespace INFOIBV
             }
             return drawImage;
         }
+
+        private double distancePointToLine(Point p1, Point p2, Point notOnLine)
+        {
+            double distance = Math.Abs((p2.Y - p1.Y) * notOnLine.X + (p2.X - p1.X) * notOnLine.Y + p2.X * p1.Y + p2.Y * p1.X);
+            distance /= Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));
+            return distance;
+        }
+
         private bool isSharkTooth(List<Point> points)
         {
             List<Point> pt = new List<Point>();
-            foreach(Point p in points)
+            foreach (Point p in points)
             {
                 pt.Add(new Point(p.X, p.Y));
             }
+
             if (pt.Count < 3) return false;
             Point mid = findMid(pt);
             Point farthestPoint;
             float farthest;
             List<Point> remove = new List<Point>();
             List<Point> corners = new List<Point>();
+            /*
+            //Find first point
+            farthestPoint = findFarthest(pt, mid);
+            farthest = (farthestPoint.X - mid.X) * (farthestPoint.X - mid.X) +
+                       (farthestPoint.Y - mid.Y) * (farthestPoint.Y - mid.Y);
+            corners.Add(farthestPoint);
+            pt.Remove(farthestPoint);
+            
+            //Find second point
+            Point secondCorner = findFarthest(pt, farthestPoint);
+            corners.Add(secondCorner);
+            pt.Remove(secondCorner);
+            
+            //Find thrid point
+            Point thirdCorner = findFarthestPointToLine(pt, farthestPoint, secondCorner);
+            corners.Add(thirdCorner);
+            pt.Remove(thirdCorner);
+            
+            */
             for (int i = 0; i < 3 && pt.Any(); i++)
             {
                 farthestPoint = findFarthest(pt, mid);
-                farthest = (farthestPoint.X - mid.X) * (farthestPoint.X - mid.X) + (farthestPoint.Y - mid.Y) * (farthestPoint.Y - mid.Y);
+                farthest = (farthestPoint.X - mid.X) * (farthestPoint.X - mid.X) +
+                           (farthestPoint.Y - mid.Y) * (farthestPoint.Y - mid.Y);
                 corners.Add(farthestPoint);
                 pt.Remove(farthestPoint);
 
                 foreach (Point p in pt)
                 {
-                    float temp = (p.X - farthestPoint.X) * (p.X - farthestPoint.X) + (p.Y - farthestPoint.Y) * (p.Y - farthestPoint.Y);
+                    float temp = (p.X - farthestPoint.X) * (p.X - farthestPoint.X) +
+                                 (p.Y - farthestPoint.Y) * (p.Y - farthestPoint.Y);
                     if (temp < farthest) remove.Add(p);
                 }
+
                 foreach (Point p in remove)
                 {
                     pt.Remove(p);
                 }
+
                 remove.Clear();
             }
+            
             if (corners.Count < 3) return false;
+            double dist01 =
+                Math.Sqrt(Math.Pow(corners[0].X - corners[1].X, 2) + Math.Pow(corners[0].Y - corners[1].Y, 2));
+            double dist02 =
+                Math.Sqrt(Math.Pow(corners[0].X - corners[2].X, 2) + Math.Pow(corners[0].Y - corners[2].Y, 2));
+            double dist12 =
+                Math.Sqrt(Math.Pow(corners[1].X - corners[2].X, 2) + Math.Pow(corners[1].Y - corners[2].Y, 2));
+
+            if (dist01 < 0.3 * dist02 || dist02 < 0.3 * dist12)
+                return false;
+            
+            if (dist02 < 0.3 * dist01 || dist02 < 0.3 * dist12)
+                return false;
+            
+            if (dist12 < 0.3 * dist01 || dist02 < 0.3 * dist02)
+                return false;
+            
+            
             double A = area(corners[0], corners[1], corners[2]);
             double A2 = area(mid, corners[1], corners[2]) + area(corners[0], mid, corners[2]) + area(corners[0], corners[1], mid);
             if (Math.Abs(A - A2) < 10) return true;
@@ -1400,6 +1450,23 @@ namespace INFOIBV
                 if ((p.X-mid.X) * (p.X-mid.X) + (p.Y-mid.Y) * (p.Y-mid.Y) > (farthest.X-mid.X) * (farthest.X-mid.X) + (farthest.Y-mid.Y) * (farthest.Y-mid.Y)) farthest = p;
 
             }
+            return farthest;
+        }
+
+        private Point findFarthestPointToLine(List<Point> pts, Point p1, Point p2)
+        {
+            Point farthest = pts[0];
+            double distanceFarthest = distancePointToLine(p1, p2, pts[0]);
+            for (int i = 1; i < pts.Count; i++)
+            {
+                double distance = distancePointToLine(p1, p2, pts[i]);
+                if (distance > distanceFarthest)
+                {
+                    farthest = pts[i];
+                    distanceFarthest = distance;
+                }
+            }
+
             return farthest;
         }
 
