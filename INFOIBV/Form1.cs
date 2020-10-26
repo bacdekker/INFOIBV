@@ -73,12 +73,15 @@ namespace INFOIBV
             workingImage = medianFilter(workingImage, 7);
             
             List<Point> corners = new List<Point>();
-           
+            /*
             for (int i=0; corners.Count() < workingImage.GetLength(0)/4 && i < 7; i++)
             {
                 corners = harrisCorner(workingImage,(byte)(30 - 4*i), 6750 - (i*50), createGaussianFilterDouble(7, 5f));
             }
+            */
+            corners = harrisCorner(workingImage, 5, 5500, createGaussianFilterDouble(7, 5f));
             corners.Count();
+            
             workingImage = detectTriangles(workingImage, corners, workingImage);
 
 
@@ -1410,6 +1413,12 @@ namespace INFOIBV
             if (dist12 < 0.3 * dist01 || dist02 < 0.3 * dist02)
                 return false;
 
+            double distanceToLine1 = distancePointToLine(farthestPoint, secondCorner, thirdCorner);
+            double distanceToLine2 = distancePointToLine(farthestPoint, thirdCorner, secondCorner);
+            double distanceToLine3 = distancePointToLine(secondCorner, thirdCorner, farthestPoint);
+
+            if (distanceToLine1 < 10 || distanceToLine2 < 10 || distanceToLine3 < 10)
+                return false;
 
             foreach (Point point in pt)
             {
