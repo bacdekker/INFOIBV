@@ -71,8 +71,14 @@ namespace INFOIBV
             workingImage = convolveImage(workingImage, new float[,] { { 0, -1, 0 }, { -1, 5, -1 }, { 0, -1, 0 } });
             workingImage = adjustContrast(workingImage);
             workingImage = medianFilter(workingImage, 7);
-
-            List<Point> corners = harrisCorner(workingImage, 5, 5500, createGaussianFilterDouble(7, 5f));
+            
+            List<Point> corners = new List<Point>();
+           
+            for (int i=0; corners.Count() < workingImage.GetLength(0)/4 && i < 7; i++)
+            {
+                corners = harrisCorner(workingImage,(byte)(30 - 4*i), 6750 - (i*50), createGaussianFilterDouble(7, 5f));
+            }
+            corners.Count();
             workingImage = detectTriangles(workingImage, corners, workingImage);
 
 
@@ -1291,7 +1297,7 @@ namespace INFOIBV
             List<List<Point>> shapes = new List<List<Point>>();
             byte[,] regionImage = thresholdImage(inputImage, 180);
             regionImage = findRegions(regionImage);
-            regionImage = dilateImage(regionImage, createStructuringElement('c', 25));
+            regionImage = dilateImage(regionImage, createStructuringElement('c', 35));
             for (int i = 1; i < 255; i++)
             {
                 List<Point> temp = new List<Point>();
@@ -1345,24 +1351,24 @@ namespace INFOIBV
             float farthest;
             List<Point> remove = new List<Point>();
             List<Point> corners = new List<Point>();
-            
+
             //Find first point
             farthestPoint = findFarthest(pt, mid);
             farthest = (farthestPoint.X - mid.X) * (farthestPoint.X - mid.X) +
                        (farthestPoint.Y - mid.Y) * (farthestPoint.Y - mid.Y);
             corners.Add(farthestPoint);
             pt.Remove(farthestPoint);
-            
+
             //Find second point
             Point secondCorner = findFarthest(pt, farthestPoint);
             corners.Add(secondCorner);
             pt.Remove(secondCorner);
-            
+
             //Find thrid point
             Point thirdCorner = findFarthestPointToLine(pt, farthestPoint, secondCorner);
             corners.Add(thirdCorner);
             pt.Remove(thirdCorner);
-            
+
             /*
             for (int i = 0; i < 3 && pt.Any(); i++)
             {
@@ -1386,7 +1392,7 @@ namespace INFOIBV
 
                 remove.Clear();
             }
-            
+            */
             if (corners.Count < 3) return false;
             double dist01 =
                 Math.Sqrt(Math.Pow(corners[0].X - corners[1].X, 2) + Math.Pow(corners[0].Y - corners[1].Y, 2));
@@ -1403,7 +1409,7 @@ namespace INFOIBV
             
             if (dist12 < 0.3 * dist01 || dist02 < 0.3 * dist02)
                 return false;
-            */
+
 
             foreach (Point point in pt)
             {
@@ -1414,8 +1420,8 @@ namespace INFOIBV
                 if (d1 > 10 && d2 > 10 && d3 > 10)
                     return false;
             }
-            
-            
+
+
             double A = area(corners[0], corners[1], corners[2]);
             double A2 = area(mid, corners[1], corners[2]) + area(corners[0], mid, corners[2]) + area(corners[0], corners[1], mid);
             if (Math.Abs(A - A2) < 10) return true;
