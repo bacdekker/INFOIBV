@@ -72,7 +72,7 @@ namespace INFOIBV
             workingImage = adjustContrast(workingImage);
             workingImage = medianFilter(workingImage, 7);
 
-            List<Point> corners = harrisCorner(workingImage, 10, 6500, createGaussianFilterDouble(7, 5f));
+            List<Point> corners = harrisCorner(workingImage, 5, 5500, createGaussianFilterDouble(7, 5f));
             workingImage = detectTriangles(workingImage, corners, workingImage);
 
 
@@ -1326,7 +1326,7 @@ namespace INFOIBV
 
         private double distancePointToLine(Point p1, Point p2, Point notOnLine)
         {
-            double distance = Math.Abs((p2.Y - p1.Y) * notOnLine.X + (p2.X - p1.X) * notOnLine.Y + p2.X * p1.Y + p2.Y * p1.X);
+            double distance = Math.Abs((p2.Y - p1.Y) * notOnLine.X - (p2.X - p1.X) * notOnLine.Y + p2.X * p1.Y - p2.Y * p1.X);
             distance /= Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));
             return distance;
         }
@@ -1345,7 +1345,7 @@ namespace INFOIBV
             float farthest;
             List<Point> remove = new List<Point>();
             List<Point> corners = new List<Point>();
-            /*
+            
             //Find first point
             farthestPoint = findFarthest(pt, mid);
             farthest = (farthestPoint.X - mid.X) * (farthestPoint.X - mid.X) +
@@ -1363,7 +1363,7 @@ namespace INFOIBV
             corners.Add(thirdCorner);
             pt.Remove(thirdCorner);
             
-            */
+            /*
             for (int i = 0; i < 3 && pt.Any(); i++)
             {
                 farthestPoint = findFarthest(pt, mid);
@@ -1403,6 +1403,17 @@ namespace INFOIBV
             
             if (dist12 < 0.3 * dist01 || dist02 < 0.3 * dist02)
                 return false;
+            */
+
+            foreach (Point point in pt)
+            {
+                double d1 = distancePointToLine(farthestPoint, secondCorner, point);
+                double d2 = distancePointToLine(farthestPoint, thirdCorner, point);
+                double d3 = distancePointToLine(secondCorner, thirdCorner, point);
+
+                if (d1 > 10 && d2 > 10 && d3 > 10)
+                    return false;
+            }
             
             
             double A = area(corners[0], corners[1], corners[2]);
