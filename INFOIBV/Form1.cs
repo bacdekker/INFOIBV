@@ -79,7 +79,7 @@ namespace INFOIBV
                 corners = harrisCorner(workingImage,(byte)(30 - 4*i), 6750 - (i*50), createGaussianFilterDouble(7, 5f));
             }
             */
-            corners = harrisCorner(workingImage, 5, 5500, createGaussianFilterDouble(7, 5f));
+            corners = harrisCorner(workingImage, 4, 5000, createGaussianFilterDouble(7, 5f));
             corners.Count();
             
             workingImage = detectTriangles(workingImage, corners, workingImage);
@@ -1300,7 +1300,9 @@ namespace INFOIBV
             List<List<Point>> shapes = new List<List<Point>>();
             byte[,] regionImage = thresholdImage(inputImage, 180);
             regionImage = findRegions(regionImage);
-            regionImage = dilateImage(regionImage, createStructuringElement('c', 35));
+            byte[,] edgeImage = edgeMagnitude(regionImage, HorizontalKernel(), VerticalKernel());
+            regionImage = dilateImage(regionImage, createStructuringElement('c', 25));
+            
             for (int i = 1; i < 255; i++)
             {
                 List<Point> temp = new List<Point>();
@@ -1324,7 +1326,7 @@ namespace INFOIBV
             for (int i = 0; i < shapes.Count; i++)
             {
                 drawImage = drawPoints(drawImage, shapes[i], 10, (byte)(i * 20));
-                if (isSharkTooth(shapes[i]))
+                if (isSharkTooth(shapes[i], edgeImage))
                 {
                     drawImage = drawBoundingBox(drawImage, findMaximumCorners(shapes[i]).Item1, findMaximumCorners(shapes[i]).Item2);
                 }
@@ -1340,7 +1342,7 @@ namespace INFOIBV
             return distance;
         }
 
-        private bool isSharkTooth(List<Point> points)
+        private bool isSharkTooth(List<Point> points, byte[,] edgeImage)
         {
             List<Point> pt = new List<Point>();
             foreach (Point p in points)
@@ -1396,6 +1398,7 @@ namespace INFOIBV
                 remove.Clear();
             }
             */
+            double mul = 0.4;
             if (corners.Count < 3) return false;
             double dist01 =
                 Math.Sqrt(Math.Pow(corners[0].X - corners[1].X, 2) + Math.Pow(corners[0].Y - corners[1].Y, 2));
@@ -1404,13 +1407,13 @@ namespace INFOIBV
             double dist12 =
                 Math.Sqrt(Math.Pow(corners[1].X - corners[2].X, 2) + Math.Pow(corners[1].Y - corners[2].Y, 2));
 
-            if (dist01 < 0.3 * dist02 || dist02 < 0.3 * dist12)
+            if (dist01 < mul * dist02 || dist02 < mul * dist12)
                 return false;
             
-            if (dist02 < 0.3 * dist01 || dist02 < 0.3 * dist12)
+            if (dist02 < mul * dist01 || dist02 < mul * dist12)
                 return false;
             
-            if (dist12 < 0.3 * dist01 || dist02 < 0.3 * dist02)
+            if (dist12 < mul * dist01 || dist02 < mul * dist02)
                 return false;
 
             double distanceToLine1 = distancePointToLine(farthestPoint, secondCorner, thirdCorner);
