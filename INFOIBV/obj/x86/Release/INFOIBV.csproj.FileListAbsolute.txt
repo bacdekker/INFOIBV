@@ -6,3 +6,13 @@ X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.Properties.Resource
 X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.csproj.GenerateResource.cache
 X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.exe
 X:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.pdb
+Z:\Documenten\GitHub\INFOIBV\INFOIBV\bin\Release\INFOIBV.exe.config
+Z:\Documenten\GitHub\INFOIBV\INFOIBV\bin\Release\INFOIBV.exe
+Z:\Documenten\GitHub\INFOIBV\INFOIBV\bin\Release\INFOIBV.pdb
+Z:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.csprojAssemblyReference.cache
+Z:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.INFOIBV.resources
+Z:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.Properties.Resources.resources
+Z:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.csproj.GenerateResource.cache
+Z:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.csproj.CoreCompileInputs.cache
+Z:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.exe
+Z:\Documenten\GitHub\INFOIBV\INFOIBV\obj\x86\Release\INFOIBV.pdb
